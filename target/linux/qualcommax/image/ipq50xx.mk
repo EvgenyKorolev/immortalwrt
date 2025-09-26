@@ -195,3 +195,22 @@ define Device/yuncore_ax850
 		ipq-wifi-yuncore_ax850
 endef
 TARGET_DEVICES += yuncore_ax850
+
+define Device/myradiomost
+	$(call Device/FitImage)
+	$(call Device/UbiFit)
+	DEVICE_VENDOR := KYRYCH
+	DEVICE_MODEL := KyrychBridge
+	DEVICE_DTS := myradiomost
+	DEVICE_DTS_CONFIG := config@mp03.5-c1
+	KERNEL_IN_UBI := 1
+    BLOCKSIZE := 128k
+    PAGESIZE := 2048
+    NAND_SIZE := 128m
+    IMAGE_SIZE := 64m
+	IMAGES := factory.bin sysupgrade.bin
+	IMAGE/sysupgrade.bin := append-kernel | append-rootfs | pad-rootfs | check-size | append-metadata
+	IMAGE/factory.bin := append-ubi | append-metadata
+	DEVICE_PACKAGES := ath11k-firmware-ipq5018
+endef
+TARGET_DEVICES += myradiomost
