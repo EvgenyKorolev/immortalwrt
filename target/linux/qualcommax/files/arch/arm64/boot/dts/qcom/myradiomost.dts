@@ -20,7 +20,7 @@
     };
 
     chosen {
-        bootargs-append = " root=/dev/ubiblock0_1 swiotlb=1 coherent_pool=2M";
+        bootargs-append = " ubi.mtd=rootfs root=/dev/ubiblock0_1 rootfstype=ubifs";
         stdout-path = "serial0:115200n8";
     };
 
@@ -151,6 +151,33 @@
     status = "okay";
 };
 
+&qpic_nand {
+    status = "okay";
+    partitions {
+        compatible = "fixed-partitions";
+        #address-cells = <1>;
+        #size-cells = <1>;
+
+        partition@0 {
+            label = "boot";
+            reg = <0x0 0x1000000>; // 16 MiB
+            read-only;
+        };
+        partition@1000000 {
+            label = "rootfs";
+            reg = <0x1000000 0x3000000>; // 48 MiB
+        };
+        partition@4000000 {
+            label = "rootfs_1";
+            reg = <0x4000000 0x3000000>; // 48 MiB
+        };
+        partition@7000000 {
+            label = "failsafe";
+            reg = <0x7000000 0x1000000>; // 16 MiB
+        };
+    };
+};
+
 &blsp1_spi1 {
     status = "okay";
     flash@0 {
@@ -176,10 +203,6 @@
             // ART partition: Wi-Fi calibration
         };
     };
-};
-
-&qpic_nand {
-    status = "okay";
 };
 
 // The most important part: support for QCN6102 over PCIe
