@@ -214,5 +214,6 @@ define Device/myradiomost
 	IMAGE/factory.bin := append-kernel | append-rootfs | pad-rootfs | append-metadata | append-ubi
 	IMAGE/ubi := append-ubi | append-metadata
 	DEVICE_PACKAGES := ath11k-firmware-ipq5018
+	ARTIFACTS := initramfs-factory.ubi
 endef
 TARGET_DEVICES += myradiomost
