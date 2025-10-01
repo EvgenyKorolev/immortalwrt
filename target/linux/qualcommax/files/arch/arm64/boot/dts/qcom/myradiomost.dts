@@ -152,47 +152,49 @@
 };
 
 &qpic_nand {
-    pinctrl-0 = <&qpic_pins>;
-    pinctrl-names = "default";
-    status = "okay";
-    partitions {
-        status = "disabled";
-    };
+    compatible = "qcom,nand";
+    reg = <0x079b0000 0x1000>;
+    #address-cells = <1>;
+    #size-cells = <1>;
 
-    nand@0 {
-        compatible = "spi-nand";
-        reg = <0>;
+    nand-ecc-engine = <&qpic_nand>;
+    nand-bus-width = <8>;
+    nand-ecc-strength = <4>;
+    nand-ecc-step-size = <512>;
+    nand-oob-size = <64>;
+
+    pinctrl-names = "default";
+    pinctrl-0 = <&qpic_pins>;
+
+    status = "okay";
+
+    // Разделы для прошивки UBI
+    partitions {
+        compatible = "fixed-partitions";
         #address-cells = <1>;
         #size-cells = <1>;
 
-        nand-ecc-engine = <&qpic_nand>;
-        nand-bus-width = <8>;
-
-        partitions {
-            compatible = "fixed-partitions";
-            #address-cells = <1>;
-            #size-cells = <1>;
-
-            partition@0 {
-                label = "boot";
-                reg = <0x0 0x1000000>; // 16 MiB
-                read-only;
-            };
-            partition@1000000 {
-                label = "rootfs";
-                reg = <0x1000000 0x3000000>; // 48 MiB
-            };
-            partition@4000000 {
-                label = "rootfs_1";
-                reg = <0x4000000 0x3000000>; // 48 MiB
-            };
-            partition@7000000 {
-                label = "failsafe";
-                reg = <0x7000000 0x1000000>; // 16 MiB
-            };
+        partition@0 {
+            label = "boot";
+            reg = <0x0 0x100000>;
+            read-only;
+        };
+        partition@100000 {
+            label = "rootfs";
+            reg = <0x100000 0x3000000>;
+            compatible = "linux,ubi";
+        };
+        partition@3100000 {
+            label = "rootfs_backup";
+            reg = <0x3100000 0x3000000>;
+            compatible = "linux,ubi";
+        };
+        partition@6100000 {
+            label = "failsafe";
+            reg = <0x6100000 0x100000>;
+            read-only;
         };
     };
-
 };
 
 &blsp1_spi1 {

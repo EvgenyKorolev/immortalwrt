@@ -207,7 +207,7 @@ define Device/myradiomost
     BLOCKSIZE := 128k
     PAGESIZE := 2048
     NAND_SIZE := 128m
-    IMAGE_SIZE := 128m
+    IMAGE_SIZE := 48m
     TARGET_ROOTFS := ubifs
 	IMAGES := factory.bin sysupgrade.bin ubi
 	IMAGE/sysupgrade.bin := append-kernel | append-rootfs | pad-rootfs | check-size | append-metadata
@@ -215,5 +215,6 @@ define Device/myradiomost
 	IMAGE/ubi := append-ubi | append-metadata
 	DEVICE_PACKAGES := ath11k-firmware-ipq5018
 	ARTIFACTS := initramfs-factory.ubi
+	ARTIFACTS/initramfs-factory.ubi := append-image-stage initramfs-uImage.itb | ubinize-kernel
 endef
 TARGET_DEVICES += myradiomost
