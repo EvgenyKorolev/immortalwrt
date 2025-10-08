@@ -40,20 +40,20 @@
 
         led_system: system {
             function = LED_FUNCTION_POWER;
-            color = "green";
+            color = <LED_COLOR_ID_RED>;
             gpios = <&tlmm 26 GPIO_ACTIVE_LOW>;
         };
 
         wlan2g {
             function = LED_FUNCTION_WLAN_2GHZ;
-            color = "green";
+            color = <LED_COLOR_ID_GREEN>;
             gpios = <&tlmm 33 GPIO_ACTIVE_LOW>;
             linux,default-trigger = "phy0radio";
         };
 
         wlan5g {
             function = LED_FUNCTION_WLAN_5GHZ;
-            color = "green";
+            color = <LED_COLOR_ID_BLUE>;
             gpios = <&tlmm 34 GPIO_ACTIVE_LOW>;
             linux,default-trigger = "phy1radio";
         };
@@ -77,6 +77,8 @@
 
 &switch {
     status = "okay";
+    switch_mac_mode = <MAC_MODE_SGMII_CHANNEL0>;
+
     qcom,port_phyinfo {
         port@0 {
             port_id = <1>;
@@ -124,6 +126,11 @@
     clock-frequency = <32000>;
 };
 
+&xo_board_clk {
+    clock-div = <4>;
+    clock-mult = <1>;
+};
+
 // MAC0 -> GE Phy
 &blsp1_uart1 {
     status = "okay";
@@ -152,74 +159,42 @@
 };
 
 &qpic_nand {
-    compatible = "qcom,nand";
-    reg = <0x079b0000 0x1000>;
-    #address-cells = <1>;
-    #size-cells = <1>;
-
-    nand-ecc-engine = <&qpic_nand>;
-    nand-bus-width = <8>;
-    nand-ecc-strength = <4>;
-    nand-ecc-step-size = <512>;
-    nand-oob-size = <64>;
-
-    pinctrl-names = "default";
     pinctrl-0 = <&qpic_pins>;
-
+    pinctrl-names = "default";
     status = "okay";
 
-    // Разделы для прошивки UBI
     partitions {
-        compatible = "fixed-partitions";
+        status = "disabled";
+    };
+
+    nand@0 {
+        compatible = "spi-nand";
+        reg = <0>;
         #address-cells = <1>;
         #size-cells = <1>;
 
-        partition@0 {
-            label = "boot";
-            reg = <0x0 0x100000>;
-            read-only;
-        };
-        partition@100000 {
-            label = "rootfs";
-            reg = <0x100000 0x3000000>;
-            compatible = "linux,ubi";
-        };
-        partition@3100000 {
-            label = "rootfs_backup";
-            reg = <0x3100000 0x3000000>;
-            compatible = "linux,ubi";
-        };
-        partition@6100000 {
-            label = "failsafe";
-            reg = <0x6100000 0x100000>;
-            read-only;
-        };
-    };
-};
+        nand-ecc-engine = <&qpic_nand>;
+        nand-bus-width = <8>;
 
-&blsp1_spi1 {
-    status = "okay";
-    flash@0 {
-        compatible = "jedec,spi-nor";
-        reg = <0>;
-        spi-max-frequency = <50000000>;
         partitions {
             compatible = "fixed-partitions";
-            partition@0 { label = "0:SBL1";   reg = <0x00 0x30000>;  read-only; };
-            partition@30000 { label = "0:MIBIB";  reg = <0x30000 0x10000>;  read-only; };
-            partition@40000 { label = "0:BOOTCONFIG";  reg = <0x40000 0x10000>;  read-only; };
-            partition@50000 { label = "0:BOOTCONFIG1"; reg = <0x50000 0x10000>;  read-only; };
-            partition@60000 { label = "0:QSEE";   reg = <0x60000 0xa0000>;  read-only; };
-            partition@100000 { label = "0:QSEE_1";  reg = <0x100000 0xa0000>;  read-only; };
-            partition@1a0000 { label = "0:DEVCFG"; reg = <0x1a0000 0x10000>;  read-only; };
-            partition@1b0000 { label = "0:DEVCFG_1";  reg = <0x1b0000 0x10000>;  read-only; };
-            partition@1c0000 { label = "0:CDT";    reg = <0x1c0000 0x10000>;  read-only; };
-            partition@1d0000 { label = "0:CDT_1";  reg = <0x1d0000 0x10000>;  read-only; };
-            partition@1e0000 { label = "0:APPSBLENV"; reg = <0x1e0000 0x10000>; };
-            partition@1f0000 { label = "0:APPSBL"; reg = <0x1f0000 0xa0000>;  read-only; };
-            partition@290000 { label = "0:APPSBL_1"; reg = <0x290000 0xa0000>;  read-only; };
-            partition@330000 { label = "0:ART";    reg = <0x330000 0x70000>;  read-only; };
-            // ART partition: Wi-Fi calibration
+            #address-cells = <1>;
+            #size-cells = <1>;
+
+            partition@0 {
+                label = "0:TRAINING";
+                reg = <0x00 0x80000>;
+            };
+
+            partition@80000 {
+                label = "rootfs_1";
+                reg = <0x80000 0x3e00000>;
+            };
+
+            partition@3e80000 {
+                label = "rootfs";
+                reg = <0x3e80000 0x3e00000>;
+            };
         };
     };
 };
