@@ -8,8 +8,8 @@
 #include <dt-bindings/leds/common.h>
 
 / {
-    model = "Custom IPQ5018 Device with QCN6102";
-    compatible = "custom,ipq5018-qcn6102", "qcom,ipq5018";
+    model = "MyRadioMost IPQ5018";
+    compatible = "qcom,ipq5018-mp03.5-c1", "qcom,ipq5018";
 
     aliases {
         serial0 = &blsp1_uart1;
@@ -20,7 +20,8 @@
     };
 
     chosen {
-        bootargs-append = " ubi.mtd=rootfs root=/dev/ubiblock0_1 rootfstype=ubifs";
+        bootargs-append = " swiotlb=1 coherent_pool=2M";
+        bootargs = "ttyMSM0,115200n8 cnss2.bdf_integrated=0x24 cnss2.bdf_pci0=0x60 cnss2.bdf_pci1=0x60 cnss2.skip_radio_bmap=2 ubi.mtd=rootfs root=mtd:ubi_rootfs rootfstype=squashfs rootwait";
         stdout-path = "serial0:115200n8";
     };
 
@@ -173,7 +174,11 @@
         #address-cells = <1>;
         #size-cells = <1>;
 
+        // nand-ecc-mode = "none";
+        // nand-no-ecc-engine;
         nand-ecc-engine = <&qpic_nand>;
+        nand-ecc-strength = <4>;
+        nand-ecc-step-size = <512>;
         nand-bus-width = <8>;
 
         partitions {
