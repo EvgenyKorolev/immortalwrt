@@ -259,6 +259,119 @@
     };
 };
 
+&blsp1_spi1 {
+	status = "okay";
+
+	flash@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		reg = <0>;
+		compatible = "jedec,spi-nor";
+		spi-max-frequency = <50000000>;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "0:SBL1";
+				reg = <0x00 0x30000>;
+				read-only;
+			};
+
+			partition@30000 {
+				label = "0:MIBIB";
+				reg = <0x30000 0x10000>;
+				read-only;
+			};
+
+			partition@40000 {
+				label = "0:BOOTCONFIG";
+				reg = <0x40000 0x10000>;
+				read-only;
+			};
+
+			partition@50000 {
+				label = "0:BOOTCONFIG1";
+				reg = <0x50000 0x10000>;
+				read-only;
+			};
+
+			partition@60000 {
+				label = "0:QSEE";
+				reg = <0x60000 0xa0000>;
+				read-only;
+			};
+
+			partition@100000 {
+				label = "0:QSEE_1";
+				reg = <0x100000 0xa0000>;
+				read-only;
+			};
+
+			partition@1a0000 {
+				label = "0:DEVCFG";
+				reg = <0x1a0000 0x10000>;
+				read-only;
+			};
+
+			partition@1b0000 {
+				label = "0:DEVCFG_1";
+				reg = <0x1b0000 0x10000>;
+				read-only;
+			};
+
+			partition@1c0000 {
+				label = "0:CDT";
+				reg = <0x1c0000 0x10000>;
+				read-only;
+			};
+
+			partition@1d0000 {
+				label = "0:CDT_1";
+				reg = <0x1d0000 0x10000>;
+				read-only;
+			};
+
+			partition@1e0000 {
+				label = "0:APPSBLENV";
+				reg = <0x1e0000 0x10000>;
+			};
+
+			partition@1f0000 {
+				label = "0:APPSBL";
+				reg = <0x1f0000 0xa0000>;
+				read-only;
+			};
+
+			partition@290000 {
+				label = "0:APPSBL_1";
+				reg = <0x290000 0xa0000>;
+				read-only;
+			};
+
+			partition@330000 {
+				label = "0:ART";
+				reg = <0x330000 0x70000>;
+				read-only;
+
+				nvmem-layout {
+					compatible = "fixed-layout";
+					#address-cells = <1>;
+					#size-cells = <1>;
+
+					hw_mac_addr: hw_mac_addr {
+						#nvmem-cell-cells = <1>;
+						compatible = "mac-base";
+						reg = <0x0 0x6>;
+					};
+				};
+			};
+		};
+	};
+};
+
 &q6v5_wcss {
     status = "okay";
 
