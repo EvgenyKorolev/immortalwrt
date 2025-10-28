@@ -202,22 +202,16 @@ define Device/myradiomost
 	DEVICE_VENDOR := KYRYCH
 	DEVICE_MODEL := KyrychBridge
 	DEVICE_DTS := myradiomost
+	BLOCKSIZE := 128k
+	PAGESIZE := 2048
+	SOC := ipq5018
+	NAND_SIZE := 128m
 	DEVICE_DTS_CONFIG := config@mp03.5-c1
-    BLOCKSIZE := 128k
-    PAGESIZE := 2048
-    NAND_SIZE := 128m
-    IMAGE_SIZE := 64m
-    SOC := ipq5018
-	DEVICE_PACKAGES := ath11k-firmware-ipq5018
-	KERNEL_IN_UBI := 1
-	TARGET_ROOTFS := ubifs
-	UBINIZE_OPTS := -E 5
-	FIT_IMAGE := initramfs
-    FIT_EXTERNAL_INITRD := 1
-	IMAGES := factory.bin ubi
-	IMAGE/factory.bin := append-kernel | pad-to 400000 | append-ubi | check-size $$$$(IMAGE_SIZE)
-	IMAGE/ubi := append-kernel | pad-rootfs | check-size | append-ubi | append-metadata
-	ARTIFACTS := squashfs-factory.ubi
-	ARTIFACT/squashfs-factory.ubi := append-image-stage initramfs-uImage.itb | ubinize-kernel
+	DEVICE_PACKAGES := ath11k-firmware-ipq5018 \
+		ath11k-firmware-qcn6122
+ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),)
+	ARTIFACTS := initramfs-factory.ubi
+	ARTIFACT/initramfs-factory.ubi := append-image-stage initramfs-uImage.itb | ubinize-kernel
+endif
 endef
 TARGET_DEVICES += myradiomost
