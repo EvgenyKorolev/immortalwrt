@@ -105,7 +105,7 @@
 &dp2 {
     status = "okay";
     label = "wan";
-    phy-handle = <&qca8081>;
+    phy-handle = <&qca8337>;
 };
 
 &mdio0 {
@@ -116,7 +116,7 @@
     status = "okay";
     pinctrl-0 = <&mdio1_pins>;
     pinctrl-names = "default";
-    qca8081: ethernet-phy@28 {
+    qca8337: ethernet-phy@28 {
         compatible = "ethernet-phy-id004d.d101";
         reg = <28>;
         reset-deassert-us = <10000>;
@@ -175,8 +175,6 @@
         #address-cells = <1>;
         #size-cells = <1>;
 
-        // nand-ecc-mode = "none";
-        // nand-no-ecc-engine;
         nand-ecc-engine = <&qpic_nand>;
         nand-ecc-strength = <4>;
         nand-ecc-step-size = <512>;
@@ -188,7 +186,7 @@
             #size-cells = <1>;
 
             partition@0 {
-                label = "0:TRAINING";
+                label = "uboot";
                 reg = <0x00 0x80000>;
             };
 
