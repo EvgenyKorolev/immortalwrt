@@ -8,8 +8,8 @@
 #include <dt-bindings/leds/common.h>
 
 / {
-    model = "MyRadioMost IPQ5018";
-    compatible = "qcom,ipq5018-mp03.5-c1", "qcom,ipq5018";
+    model = "Kyrych ros_bridge";
+    compatible = "yuncore,ax830", "qcom,ipq5018";
 
     aliases {
         serial0 = &blsp1_uart1;
@@ -20,8 +20,7 @@
     };
 
     chosen {
-        bootargs-append = " swiotlb=1 coherent_pool=2M";
-        bootargs = "ttyMSM0,115200n8 cnss2.bdf_integrated=0x24 cnss2.bdf_pci0=0x60 cnss2.bdf_pci1=0x60 cnss2.skip_radio_bmap=2 ubi.mtd=rootfs root=/dev/ubiblock0_1 rootfstype=squashfs rootwait";
+        bootargs-append = " root=/dev/ubiblock0_1 swiotlb=1 coherent_pool=2M";
         stdout-path = "serial0:115200n8";
     };
 
@@ -29,6 +28,7 @@
         compatible = "gpio-keys";
         pinctrl-0 = <&button_pins>;
         pinctrl-names = "default";
+
         reset {
             label = "reset";
             gpios = <&tlmm 38 GPIO_ACTIVE_LOW>;
@@ -78,6 +78,7 @@
 
 &switch {
     status = "okay";
+
     switch_mac_mode = <MAC_MODE_SGMII_CHANNEL0>;
 
     qcom,port_phyinfo {
@@ -86,6 +87,7 @@
             mdiobus = <&mdio0>;
             phy_address = <7>;
         };
+
         port@1 {
             port_id = <2>;
             mdiobus = <&mdio1>;
@@ -95,8 +97,10 @@
     };
 };
 
+// MAC0 -> GE Phy
 &dp1 {
     status = "okay";
+
     label = "lan";
     nvmem-cells = <&hw_mac_addr 0>;
     nvmem-cell-names = "mac-address";
@@ -105,8 +109,9 @@
 
 &dp2 {
     status = "okay";
+
     label = "wan";
-    phy-handle = <&qca8337>;
+    phy-handle = <&qca8081>;
     nvmem-cells = <&hw_mac_addr 1>;
     nvmem-cell-names = "mac-address";
 };
@@ -117,9 +122,11 @@
 
 &mdio1 {
     status = "okay";
+
     pinctrl-0 = <&mdio1_pins>;
     pinctrl-names = "default";
-    qca8337: ethernet-phy@28 {
+
+    qca8081: ethernet-phy@28 {
         compatible = "ethernet-phy-id004d.d101";
         reg = <28>;
         reset-deassert-us = <10000>;
@@ -136,7 +143,6 @@
     clock-mult = <1>;
 };
 
-// MAC0 -> GE Phy
 &blsp1_uart1 {
     status = "okay";
     pinctrl-0 = <&serial_0_pins>;
@@ -163,6 +169,119 @@
     status = "okay";
 };
 
+&blsp1_spi1 {
+    status = "okay";
+
+    flash@0 {
+        #address-cells = <1>;
+        #size-cells = <1>;
+        reg = <0>;
+        compatible = "jedec,spi-nor";
+        spi-max-frequency = <50000000>;
+
+        partitions {
+            compatible = "fixed-partitions";
+            #address-cells = <1>;
+            #size-cells = <1>;
+
+            partition@0 {
+                label = "0:SBL1";
+                reg = <0x00 0x30000>;
+                read-only;
+            };
+
+            partition@30000 {
+                label = "0:MIBIB";
+                reg = <0x30000 0x10000>;
+                read-only;
+            };
+
+            partition@40000 {
+                label = "0:BOOTCONFIG";
+                reg = <0x40000 0x10000>;
+                read-only;
+            };
+
+            partition@50000 {
+                label = "0:BOOTCONFIG1";
+                reg = <0x50000 0x10000>;
+                read-only;
+            };
+
+            partition@60000 {
+                label = "0:QSEE";
+                reg = <0x60000 0xa0000>;
+                read-only;
+            };
+
+            partition@100000 {
+                label = "0:QSEE_1";
+                reg = <0x100000 0xa0000>;
+                read-only;
+            };
+
+            partition@1a0000 {
+                label = "0:DEVCFG";
+                reg = <0x1a0000 0x10000>;
+                read-only;
+            };
+
+            partition@1b0000 {
+                label = "0:DEVCFG_1";
+                reg = <0x1b0000 0x10000>;
+                read-only;
+            };
+
+            partition@1c0000 {
+                label = "0:CDT";
+                reg = <0x1c0000 0x10000>;
+                read-only;
+            };
+
+            partition@1d0000 {
+                label = "0:CDT_1";
+                reg = <0x1d0000 0x10000>;
+                read-only;
+            };
+
+            partition@1e0000 {
+                label = "0:APPSBLENV";
+                reg = <0x1e0000 0x10000>;
+            };
+
+            partition@1f0000 {
+                label = "0:APPSBL";
+                reg = <0x1f0000 0xa0000>;
+                read-only;
+            };
+
+            partition@290000 {
+                label = "0:APPSBL_1";
+                reg = <0x290000 0xa0000>;
+                read-only;
+            };
+
+            partition@330000 {
+                label = "0:ART";
+                reg = <0x330000 0x70000>;
+                read-only;
+
+                nvmem-layout {
+                    compatible = "fixed-layout";
+                    #address-cells = <1>;
+                    #size-cells = <1>;
+
+                    hw_mac_addr: hw_mac_addr {
+                        #nvmem-cell-cells = <1>;
+                        compatible = "mac-base";
+                        reg = <0x0 0x6>;
+                    };
+                };
+            };
+        };
+    };
+};
+
 &qpic_nand {
     pinctrl-0 = <&qpic_pins>;
     pinctrl-names = "default";
@@ -179,8 +298,6 @@
         #size-cells = <1>;
 
         nand-ecc-engine = <&qpic_nand>;
-        nand-ecc-strength = <4>;
-        nand-ecc-step-size = <512>;
         nand-bus-width = <8>;
 
         partitions {
@@ -189,7 +306,7 @@
             #size-cells = <1>;
 
             partition@0 {
-                label = "uboot";
+                label = "0:TRAINING";
                 reg = <0x00 0x80000>;
             };
 
@@ -261,119 +378,6 @@
     };
 };
 
-&blsp1_spi1 {
-	status = "okay";
-
-	flash@0 {
-		#address-cells = <1>;
-		#size-cells = <1>;
-		reg = <0>;
-		compatible = "jedec,spi-nor";
-		spi-max-frequency = <50000000>;
-
-		partitions {
-			compatible = "fixed-partitions";
-			#address-cells = <1>;
-			#size-cells = <1>;
-
-			partition@0 {
-				label = "0:SBL1";
-				reg = <0x00 0x30000>;
-				read-only;
-			};
-
-			partition@30000 {
-				label = "0:MIBIB";
-				reg = <0x30000 0x10000>;
-				read-only;
-			};
-
-			partition@40000 {
-				label = "0:BOOTCONFIG";
-				reg = <0x40000 0x10000>;
-				read-only;
-			};
-
-			partition@50000 {
-				label = "0:BOOTCONFIG1";
-				reg = <0x50000 0x10000>;
-				read-only;
-			};
-
-			partition@60000 {
-				label = "0:QSEE";
-				reg = <0x60000 0xa0000>;
-				read-only;
-			};
-
-			partition@100000 {
-				label = "0:QSEE_1";
-				reg = <0x100000 0xa0000>;
-				read-only;
-			};
-
-			partition@1a0000 {
-				label = "0:DEVCFG";
-				reg = <0x1a0000 0x10000>;
-				read-only;
-			};
-
-			partition@1b0000 {
-				label = "0:DEVCFG_1";
-				reg = <0x1b0000 0x10000>;
-				read-only;
-			};
-
-			partition@1c0000 {
-				label = "0:CDT";
-				reg = <0x1c0000 0x10000>;
-				read-only;
-			};
-
-			partition@1d0000 {
-				label = "0:CDT_1";
-				reg = <0x1d0000 0x10000>;
-				read-only;
-			};
-
-			partition@1e0000 {
-				label = "0:APPSBLENV";
-				reg = <0x1e0000 0x10000>;
-			};
-
-			partition@1f0000 {
-				label = "0:APPSBL";
-				reg = <0x1f0000 0xa0000>;
-				read-only;
-			};
-
-			partition@290000 {
-				label = "0:APPSBL_1";
-				reg = <0x290000 0xa0000>;
-				read-only;
-			};
-
-			partition@330000 {
-				label = "0:ART";
-				reg = <0x330000 0x70000>;
-				read-only;
-
-				nvmem-layout {
-					compatible = "fixed-layout";
-					#address-cells = <1>;
-					#size-cells = <1>;
-
-					hw_mac_addr: hw_mac_addr {
-						#nvmem-cell-cells = <1>;
-						compatible = "mac-base";
-						reg = <0x0 0x6>;
-					};
-				};
-			};
-		};
-	};
-};
-
 &q6v5_wcss {
     status = "okay";
 
@@ -404,7 +408,6 @@
             "gcc_wcss_acmt_clk",
             "gcc_wcss_axi_m_clk";
 
-        // qcom,halt-regs = <&tcsr_q6_block 0xa000 0xd000 0x0>;
         interrupts-extended =
             <&wcss_smp2p_in 8 IRQ_TYPE_NONE>,
             <&wcss_smp2p_in 9 IRQ_TYPE_NONE>,
@@ -426,7 +429,7 @@
             "spawn";
     };
 
-    // QCN6102 5G
+    // QCN6122 5G
     q6_wcss_pd3: pd-3 {
         firmware-name = "ath11k/IPQ5018/hw1.0/q6_fw.mdt";
 
@@ -462,7 +465,7 @@
 };
 
 &wifi1 {
-    // QCN6102 5G
+    // QCN6122 5G
     status = "okay";
     qcom,rproc = <&q6_wcss_pd3>;
     qcom,userpd-subsys-name = "q6v5_wcss_userpd3";
