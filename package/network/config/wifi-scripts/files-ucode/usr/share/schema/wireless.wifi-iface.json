@@ -704,6 +704,14 @@
 			"description": "Enable Multi-AP functionality",
 			"type": "number"
 		},
+		"multi_ap_vlanid": {
+			"description": "Multi-AP Default VLAN ID",
+			"type": "number"
+		},
+		"multi_ap_profile": {
+			"description": "Multi-AP Profile",
+			"type": "number"
+		},
 		"multi_ap_backhaul_key": {
 			"type": "string"
 		},
@@ -718,6 +726,10 @@
 		"multicast_to_unicast_all": {
 			"type": "alias",
 			"default": "multicast_to_unicast"
+		},
+		"na_mcast_to_ucast": {
+			"description": "IPv6 Neighbor Advertisement multicast-to-unicast conversion",
+			"type": "boolean"
 		},
 		"nas_identifier": {
 			"description": "NAS-Identifier string for RADIUS messages",
@@ -940,6 +952,10 @@
 			"description": "Use RSNE override IE WPA3 compatibility (0: disabled, 1: enabled, 2:force WPA2 for older devices)",
 			"default": 1
 		},
+		"sae_password_file": {
+			"description": "External file containing VLAN SAE MAC address triplets",
+			"type": "string"
+		},
 		"sae_pwe": {
 			"description": "SAE mechanism for PWE derivation",
 			"type": "number",
@@ -948,6 +964,10 @@
 		"sae_require_mfp": {
 			"description": "Require MFP for all associations using SAE",
 			"type": "boolean"
+		},
+		"sae_track_password": {
+			"description": "Tracking of SAE password use",
+			"type": "number"
 		},
 		"server:host": {
 			"type": "string"
@@ -1076,15 +1096,6 @@
 		"wds_sta": {
 			"description": "If bridge parameter is set, the WDS STA interface will be added to the same bridge by default",
 			"type": "boolean"
-		},
-		"wmm": {
-			"type": "alias",
-			"default": "wmm_enabled"
-		},
-		"wmm_enabled": {
-			"description": "Default WMM parameters (IEEE 802.11 draft; 11-03-0504-03-000e)",
-			"type": "boolean",
-			"default": true
 		},
 		"wnm_sleep_mode": {
 			"description": "WNM-Sleep Mode (extended sleep mode for stations)",

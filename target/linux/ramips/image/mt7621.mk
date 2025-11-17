@@ -228,8 +228,9 @@ define Build/zytrx-header
 endef
 
 define Build/zyxel-nwa-fit
+	# "77 e1" is NWA90AX
 	$(TOPDIR)/scripts/mkits-zyxel-fit.sh \
-		$@.its $@ "6b e1 6f e1 ff ff ff ff ff ff"
+		$@.its $@ "6b e1 6f e1 77 e1 ff ff ff ff"
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $@.its $@.new
 	@mv $@.new $@
 endef
@@ -740,6 +741,20 @@ define Device/confiabits_mt7621-v1
 endef
 TARGET_DEVICES += confiabits_mt7621-v1
 
+define Device/cudy_ap1300-outdoor-v1
+  $(Device/dsa-migration)
+  $(Device/uimage-lzma-loader)
+  DEVICE_VENDOR := Cudy
+  DEVICE_MODEL := AP1300 Outdoor
+  DEVICE_VARIANT := v1
+  IMAGE_SIZE := 15872k
+  UIMAGE_NAME := R39
+  DEVICE_PACKAGES := kmod-mt7603 kmod-mt7615e kmod-mt7663-firmware-ap \
+	-uboot-envtools
+  SUPPORTED_DEVICES += R39
+endef
+TARGET_DEVICES += cudy_ap1300-outdoor-v1
+
 define Device/cudy_m1300-v2
   $(Device/dsa-migration)
   IMAGE_SIZE := 15872k
@@ -815,9 +830,19 @@ define Device/cudy_r700
   DEVICE_MODEL := R700
   IMAGE_SIZE := 15872k
   UIMAGE_NAME := R29
-  DEVICE_PACKAGES := -uboot-envtools
+  DEVICE_PACKAGES := -uboot-envtools -wpad-basic-mbedtls
 endef
 TARGET_DEVICES += cudy_r700
+
+define Device/cudy_c200p
+  $(Device/dsa-migration)
+  DEVICE_VENDOR := Cudy
+  DEVICE_MODEL := C200P
+  IMAGE_SIZE := 15872k
+  UIMAGE_NAME := R74
+  DEVICE_PACKAGES := -uboot-envtools -wpad-basic-mbedtls kmod-usb3
+endef
+TARGET_DEVICES += cudy_c200p
 
 define Device/cudy_x6-v1
   $(Device/dsa-migration)
@@ -1095,6 +1120,30 @@ define Device/dlink_dir-882-r1
 endef
 TARGET_DEVICES += dlink_dir-882-r1
 
+define Device/dlink_dir-x1860-b1
+  $(Device/nand)
+  KERNEL_SIZE := 8192k
+  IMAGE_SIZE := 40960k
+  DEVICE_VENDOR := D-Link
+  DEVICE_MODEL := DIR-X1860
+  DEVICE_VARIANT := B1
+  DEVICE_ALT0_VENDOR := D-Link
+  DEVICE_ALT0_MODEL := DIR-X1550
+  DEVICE_ALT0_VARIANT := A1
+  DEVICE_PACKAGES := kmod-mt7915-firmware
+  KERNEL_LOADADDR := 0x82000000
+  KERNEL := kernel-bin | relocate-kernel $(loadaddr-y) | lzma | \
+	fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb | \
+	append-squashfs4-fakeroot
+  IMAGES += factory.bin recovery.bin
+  IMAGE/recovery.bin := append-kernel | pad-to $$(KERNEL_SIZE) | \
+	append-ubi | check-size
+  IMAGE/factory.bin := $$(IMAGE/recovery.bin) | \
+	append-dlink-covr-metadata $$(DEVICE_MODEL) | \
+	dlink-sge-image $$(DEVICE_MODEL)-$$(DEVICE_VARIANT)
+endef
+TARGET_DEVICES += dlink_dir-x1860-b1
+
 define Device/dlink_dra-1360-a1
   $(Device/dlink_dxx-1xx0-x1)
   DEVICE_MODEL := DRA-1360
@@ -1191,6 +1240,13 @@ define Device/edimax_rg21s
 endef
 TARGET_DEVICES += edimax_rg21s
 
+define Device/edup_ep-rt2960s
+  $(Device/haier-sim_wr1800k)
+  DEVICE_VENDOR := EDUP
+  DEVICE_MODEL := EP-RT2960S
+endef
+TARGET_DEVICES += edup_ep-rt2960s
+
 define Device/elecom_wrc-gs
   $(Device/dsa-migration)
   $(Device/uimage-lzma-loader)
@@ -1226,11 +1282,13 @@ define Device/elecom_wmc-x1800gst
   KERNEL_LOADADDR := 0x82000000
   KERNEL := kernel-bin | relocate-kernel $(loadaddr-y) | lzma | \
 	fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb
+ifeq ($(IB),)
 ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),)
   ARTIFACTS := initramfs-factory.bin
   ARTIFACT/initramfs-factory.bin := append-image-stage initramfs-kernel.bin | \
 	check-size $$$$(KERNEL_SIZE) | elecom-wrc-gs-factory WMC-2LX 0.00 -N | \
 	append-string MT7621_ELECOM_WMC-2LX
+endif
 endif
   DEVICE_PACKAGES := kmod-mt7915-firmware -uboot-envtools
 endef
@@ -1361,11 +1419,13 @@ define Device/elecom_wrc-x1800gs
 	fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb
   KERNEL_SIZE := 8192k
   IMAGE_SIZE := 51456k
+ifeq ($(IB),)
 ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),)
   ARTIFACTS := initramfs-factory.bin
   ARTIFACT/initramfs-factory.bin := append-image-stage initramfs-kernel.bin | \
 	znet-header 4.04(XVF.1)b90 COMC 0x68 | elecom-product-header WRC-X1800GS | \
 	check-size
+endif
 endif
   DEVICE_PACKAGES := kmod-mt7915-firmware
 endef
@@ -1379,11 +1439,13 @@ define Device/elecom_wsc-x1800gs
   KERNEL_LOADADDR := 0x82000000
   KERNEL := kernel-bin | relocate-kernel $(loadaddr-y) | lzma | \
 	fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb
+ifeq ($(IB),)
 ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),)
   ARTIFACTS := initramfs-factory.bin
   ARTIFACT/initramfs-factory.bin := append-image-stage initramfs-kernel.bin | \
 	check-size $$$$(KERNEL_SIZE) | elecom-wrc-gs-factory WMC-2LX 0.00 -N | \
 	append-string MT7621_ELECOM_WMC-2LX
+endif
 endif
   DEVICE_PACKAGES := kmod-mt7915-firmware -uboot-envtools
 endef
@@ -1456,10 +1518,12 @@ define Device/genexis_pulse-ex400/common
     --log-lebs=2 --space-fixup --squash-uids
   KERNEL := kernel-bin | lzma | uImage lzma
   KERNEL_INITRAMFS := kernel-bin | append-dtb | lzma | uImage lzma
+ifeq ($(IB),)
 ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),)
   IMAGES += factory.bin
   IMAGE/factory.bin := append-image-stage initramfs-kernel.bin | \
 	inteno-bootfs | inteno-y3-header EX400 | append-md5sum-ascii-salted
+endif
 endif
   IMAGE/sysupgrade.bin := append-kernel | inteno-bootfs | pad-to 10M | \
     sysupgrade-tar kernel=$$$$@ | check-size | append-metadata
@@ -1553,10 +1617,12 @@ define Device/haier-sim_wr1800k
   KERNEL_LOADADDR := 0x82000000
   KERNEL := kernel-bin | relocate-kernel $(loadaddr-y) | lzma | \
 	fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb
+ifeq ($(IB),)
 ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),)
   ARTIFACTS := initramfs-factory.bin
   ARTIFACT/initramfs-factory.bin := append-image-stage initramfs-kernel.bin | \
 	haier-sim_wr1800k-factory
+endif
 endif
   DEVICE_PACKAGES := kmod-mt7915-firmware
 endef
@@ -1628,9 +1694,11 @@ define Device/iodata_wn-ax1167gr
   IMAGE_SIZE := 15552k
   DEVICE_VENDOR := I-O DATA
   DEVICE_MODEL := WN-AX1167GR
-  # ARTIFACTS := initramfs-factory.bin
-  # ARTIFACT/initramfs-factory.bin := append-image-stage initramfs-kernel.bin | \
-  # 	check-size 7680k | senao-header -r 0x30a -p 0x1055 -t 4
+# ifeq ($(IB),)
+#   ARTIFACTS := initramfs-factory.bin
+#   ARTIFACT/initramfs-factory.bin := append-image-stage initramfs-kernel.bin | \
+# 	check-size 7680k | senao-header -r 0x30a -p 0x1055 -t 4
+# endif
   DEVICE_PACKAGES := kmod-mt7603 kmod-mt76x2 -uboot-envtools
 endef
 TARGET_DEVICES += iodata_wn-ax1167gr
@@ -1680,10 +1748,12 @@ define Device/iodata_wn-deax1800gr
   KERNEL := kernel-bin | relocate-kernel $(loadaddr-y) | lzma | \
 	fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb
   IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
+ifeq ($(IB),)
   ARTIFACTS := initramfs-factory.bin
   ARTIFACT/initramfs-factory.bin := append-image-stage initramfs-kernel.bin | \
 	check-size | xor-image -p 29944a25120984c2 -x | \
 	iodata-mstc-header2 WN-DEAX1800GR 00021003
+endif
   DEVICE_PACKAGES := kmod-mt7915-firmware
 endef
 TARGET_DEVICES += iodata_wn-deax1800gr
@@ -1811,9 +1881,11 @@ define Device/iptime_ax2004m
   KERNEL_LOADADDR := 0x82000000
   KERNEL := kernel-bin | relocate-kernel $(loadaddr-y) | lzma | \
 	fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb
+ifeq ($(IB),)
   ARTIFACTS := initramfs-factory.bin
   ARTIFACT/initramfs-factory.bin := append-image-stage initramfs-kernel.bin | \
 	check-size | iptime-crc32 ax2004m
+endif
   DEVICE_VENDOR := ipTIME
   DEVICE_MODEL := AX2004M
   DEVICE_PACKAGES := kmod-mt7915-firmware kmod-usb3
@@ -2120,6 +2192,10 @@ define Device/MikroTik
   IMAGE/sysupgrade.bin := append-kernel | yaffs-filesystem -L | \
 	pad-to $$$$(BLOCKSIZE) | append-rootfs | pad-rootfs | check-size | \
 	append-metadata
+  IMAGES += sysupgrade-v7.bin
+  IMAGE/sysupgrade-v7.bin := append-kernel | kernel-pack-npk | \
+	  yaffs-filesystem -L | pad-to $$$$(BLOCKSIZE) | \
+	  append-rootfs | pad-rootfs | check-size | append-metadata
 endef
 
 define Device/mikrotik_ltap-2hnd
@@ -2539,6 +2615,21 @@ define Device/planex_vr500
 endef
 TARGET_DEVICES += planex_vr500
 
+define Device/plasmacloud_pax1800-lite
+  $(Device/nand)
+  IMAGE_SIZE := 60512k
+  DEVICE_VENDOR := Plasma Cloud
+  DEVICE_MODEL := PAX1800-Lite
+  DEVICE_DTS_CONFIG := config@plasmacloud.pax1800-lite
+  DEVICE_PACKAGES := kmod-mt7915-firmware kmod-usb3 kmod-hwmon-lm75
+  KERNEL_IN_UBI := 1
+  IMAGES += factory.bin
+  KERNEL := kernel-bin | lzma | fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb | pad-to $$(BLOCKSIZE)
+  IMAGE/factory.bin := append-rootfs | pad-to 1k | dualboot-datachk-nand-image ce_type=PAX1800-Lite
+  IMAGE/sysupgrade.bin := append-rootfs | pad-to 1k | sysupgrade-tar rootfs=$$$$@ | append-metadata
+endef
+TARGET_DEVICES += plasmacloud_pax1800-lite
+
 define Device/raisecom_msg1500-x-00
   $(Device/nand)
   $(Device/uimage-lzma-loader)
@@ -2834,6 +2925,7 @@ define Device/tplink_eap235-wall-v1
   IMAGE_SIZE := 13440k
   IMAGE/factory.bin := append-rootfs | tplink-safeloader factory | \
 	pad-extra 128
+  DEFAULT := n
 endef
 TARGET_DEVICES += tplink_eap235-wall-v1
 
@@ -2845,7 +2937,7 @@ define Device/tplink_eap613-v1
   DEVICE_PACKAGES := kmod-mt7915-firmware -uboot-envtools
   TPLINK_BOARD_ID := EAP610-V3
   KERNEL := kernel-bin | lzma | fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb | pad-to 64k
-  KERNEL_INITRAMFS := kernel-bin | lzma | fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb with-initrd
+  KERNEL_INITRAMFS := kernel-bin | lzma | fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb
   IMAGE_SIZE := 13248k
 endef
 TARGET_DEVICES += tplink_eap613-v1
@@ -2857,8 +2949,10 @@ define Device/tplink_eap615-wall-v1
   DEVICE_VARIANT := v1
   DEVICE_PACKAGES := kmod-mt7915-firmware -uboot-envtools
   TPLINK_BOARD_ID := EAP615-WALL-V1
-  KERNEL := kernel-bin | lzma -d22 | fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb | pad-to 64k
-  KERNEL_INITRAMFS := kernel-bin | lzma -d22 | fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb with-initrd
+  KERNEL_LOADADDR := 0x82000000
+  KERNEL := kernel-bin | relocate-kernel $(loadaddr-y) | lzma | \
+	fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb | pad-to 64k
+  KERNEL_INITRAMFS := kernel-bin | lzma -d22 | fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb
   IMAGE_SIZE := 13248k
 endef
 TARGET_DEVICES += tplink_eap615-wall-v1
@@ -3615,6 +3709,7 @@ TARGET_DEVICES += zbtlink_zbt-wg3526-32m
 
 define Device/zio_freezio
   $(Device/dsa-migration)
+  $(Device/uimage-lzma-loader)
   IMAGE_SIZE := 16064k
   DEVICE_VENDOR := ZIO
   DEVICE_MODEL := FREEZIO
@@ -3709,6 +3804,8 @@ endef
 define Device/zyxel_nwa50ax
   $(Device/zyxel_nwa-ax)
   DEVICE_MODEL := NWA50AX
+  DEVICE_ALT0_VENDOR := Zyxel
+  DEVICE_ALT0_MODEL := NWA90AX
 endef
 TARGET_DEVICES += zyxel_nwa50ax
 

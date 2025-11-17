@@ -46,13 +46,13 @@
 		led_system_blue: system-blue {
 			color = <LED_COLOR_ID_BLUE>;
 			function = LED_FUNCTION_STATUS;
-			gpio = <&tlmm 24 GPIO_ACTIVE_HIGH>;
+			gpios = <&tlmm 24 GPIO_ACTIVE_HIGH>;
 		};
 
 		led_status_white: status-white {
 			color = <LED_COLOR_ID_WHITE>;
 			function = LED_FUNCTION_STATUS;
-			gpio = <&tlmm 23 GPIO_ACTIVE_HIGH>;
+			gpios = <&tlmm 23 GPIO_ACTIVE_HIGH>;
 		};
 	};
 
@@ -88,7 +88,7 @@
 // MAC1 ---SGMII---> QCA8337 SerDes
 &dp2 {
 	status = "okay";
-	nvmem-cells = <&macaddr_dp2>;
+	nvmem-cells = <&macaddr_dp2 0>;
 	nvmem-cell-names = "mac-address";
 
 	fixed-link {
@@ -229,11 +229,8 @@
 			compatible = "qcom,smem-part";
 
 			partition-0-art {
-				compatible = "fixed-partitions";
-				label = "0:ART";
+				label = "0:art";
 				read-only;
-				#address-cells = <1>;
-				#size-cells = <1>;
 
 				nvmem-layout {
 					compatible = "fixed-layout";
@@ -243,7 +240,7 @@
 					macaddr_dp2: macaddr@0 {
 						compatible = "mac-base";
 						#nvmem-cell-cells = <1>;
-						reg = <0x0 0x6>;
+						reg = <0x6 0x6>;
 					};
 				};
 			};

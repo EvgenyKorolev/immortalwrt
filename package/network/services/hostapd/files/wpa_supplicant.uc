@@ -1,4 +1,5 @@
 let libubus = require("ubus");
+import * as uloop from "uloop";
 import { open, readfile } from "fs";
 import { wdev_create, wdev_set_mesh_params, wdev_remove, is_equal, wdev_set_up, vlist_new, phy_open } from "common";
 
@@ -16,6 +17,7 @@ libubus.guard(ex_handler);
 wpas.data.mld = {};
 wpas.data.config = {};
 wpas.data.iface_phy = {};
+wpas.data.iface_ubus = {};
 wpas.data.macaddr_list = {};
 
 function iface_stop(iface)
@@ -177,6 +179,8 @@ function mld_add(data, phy_list)
 	}
 
 	let wdev_config = { ...data.config, radio_mask: data.radio_mask };
+	if (!wdev_config.macaddr)
+		wdev_config.macaddr = phydev.macaddr_next();
 	let ret = phydev.wdev_add(name, wdev_config);
 	if (ret)
 		wpas.printf(`Failed to create device ${name}: ${ret}`);
@@ -303,6 +307,9 @@ function mld_update_phy(phy, ifaces) {
 }
 
 function mld_start() {
+	if (wpas.data.mld_pending)
+		return;
+
 	wpas.printf(`Start pending MLD interfaces\n`);
 
 	let phy_list = {};
@@ -493,6 +500,18 @@ let main_obj = {
 			return libubus.STATUS_NOT_FOUND;
 		}
 	},
+	iface_status: {
+		args: {
+			name: ""
+		},
+		call: function(req) {
+			let iface = wpas.interfaces[req.args.name];
+			if (!iface)
+				return libubus.STATUS_NOT_FOUND;
+
+			return iface.status();
+		},
+	},
 	mld_set: {
 		args: {
 			config: {}
@@ -501,6 +520,7 @@ let main_obj = {
 			if (!req.args.config)
 				return libubus.STATUS_INVALID_ARGUMENT;
 
+			wpas.data.mld_pending = true;
 			mld_set_config(req.args.config);
 			return 0;
 		}
@@ -508,6 +528,7 @@ let main_obj = {
 	mld_start: {
 		args: {},
 		call: function(req) {
+			wpas.data.mld_pending = false;
 			mld_start();
 			return 0;
 		}
@@ -531,7 +552,7 @@ let main_obj = {
 				set_config(phy, req.args.phy, req.args.radio, req.args.num_global_macaddr, req.args.macaddr_base, req.args.config);
 
 			if (!req.args.defer)
-				start_pending(phy);
+				uloop.timer(100, () => start_pending(phy));
 
 			return {
 				pid: wpas.getpid()
@@ -609,7 +630,10 @@ function iface_event(type, name, data) {
 
 	data ??= {};
 	data.name = name;
-	wpas.data.obj.notify(`iface.${type}`, data, null, null, null, -1);
+	let req = wpas.data.obj.notify(`iface.${type}`, data, null, null, null, -1);
+	if (req)
+		req.abort();
+
 	ubus.call("service", "event", { type: `wpa_supplicant.${name}.${type}`, data: {} });
 }
 
@@ -700,6 +724,85 @@ function iface_channel_switch(ifname, iface, info)
 	ubus.call("hostapd", "apsta_state", msg);
 }
 
+function iface_ubus_remove(ifname)
+{
+	let obj = wpas.data.iface_ubus[ifname];
+	if (!obj)
+		return;
+
+	obj.remove();
+	delete wpas.data.iface_ubus[ifname];
+}
+
+function iface_ubus_notify(ifname, event)
+{
+	let obj = wpas.data.iface_ubus[ifname];
+	if (!obj)
+		return;
+
+	obj.notify('ctrl-event', { event }, null, null, null, -1);
+}
+
+function iface_ubus_add(ifname)
+{
+	let ubus = wpas.data.ubus;
+
+	iface_ubus_remove(ifname);
+
+	let obj = ubus.publish(`wpa_supplicant.${ifname}`, {
+		reload: {
+			args: {},
+			call: (req) => {
+				let iface = wpas.interfaces[ifname];
+				if (!iface)
+					return libubus.STATUS_NOT_FOUND;
+
+				iface.ctrl("RECONFIGURE");
+				return 0;
+			},
+		},
+		wps_start: {
+			args: {
+				multi_ap: true
+			},
+			call: (req) => {
+				let iface = wpas.interfaces[ifname];
+				if (!iface)
+					return libubus.STATUS_NOT_FOUND;
+
+				iface.ctrl(`WPS_PBC multi_ap=${+req.args.multi_ap}`);
+				return 0;
+			},
+		},
+		wps_cancel: {
+			args: {},
+			call: (req) => {
+				let iface = wpas.interfaces[ifname];
+				if (!iface)
+					return libubus.STATUS_NOT_FOUND;
+
+				iface.ctrl("WPS_CANCEL");
+				return 0;
+			},
+		},
+		control: {
+			args: {
+				command: ""
+			},
+			call: (req) => {
+				let iface = wpas.interfaces[ifname];
+				if (!iface)
+					return libubus.STATUS_NOT_FOUND;
+
+				return {
+					result: iface.ctrl(req.args.command)
+				};
+			},
+		},
+	});
+	wpas.data.iface_ubus[ifname] = obj;
+}
+
 return {
 	shutdown: function() {
 		for (let phy in wpas.data.config)
@@ -714,12 +817,20 @@ return {
 		return mld_bss_allowed(mld, bss);
 	},
 	iface_add: function(name, obj) {
+		iface_ubus_add(name);
 		iface_event("add", name);
 	},
 	iface_remove: function(name, obj) {
 		iface_event("remove", name);
+		iface_ubus_remove(name);
+	},
+	ctrl_event: function(name, iface, ev) {
+		iface_ubus_notify(name, ev);
 	},
 	state: function(ifname, iface, state) {
+		let event_data = iface.status();
+		event_data.name = ifname;
+		iface_event("state", ifname, event_data);
 		try {
 			iface_hostapd_notify(ifname, iface, state);
 
@@ -750,5 +861,9 @@ return {
 	event: function(ifname, iface, ev, info) {
 		if (ev == "CH_SWITCH_STARTED")
 			iface_channel_switch(ifname, iface, info);
+	},
+	wps_credentials: function(ifname, iface, cred) {
+		cred.ifname = ifname;
+		ubus.event("wps_credentials", cred);
 	}
 };

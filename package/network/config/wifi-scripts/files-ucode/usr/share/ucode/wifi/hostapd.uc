@@ -150,8 +150,10 @@ function device_htmode_append(config) {
 	/* 802.11n */
 	config.ieee80211n = 0;
 	if (config.band != '6g') {
-		if (config.htmode in [ 'VHT20', 'HT20', 'HE20', 'EHT20' ])
+		if (config.htmode in [ 'VHT20', 'HT20', 'HE20', 'EHT20' ]) {
 			config.ieee80211n = 1;
+			config.ht_capab = '';
+		}
 		if (config.htmode in [ 'HT40', 'HT40+', 'HT40-', 'VHT40', 'VHT80', 'VHT160', 'HE40', 'HE80', 'HE160', 'EHT40', 'EHT80', 'EHT160' ]) {
 			config.ieee80211n = 1;
 			if (!config.channel)
@@ -303,7 +305,7 @@ function device_htmode_append(config) {
 			config.short_gi_160 = 0;
 		}
 
-		config.tx_queue_data2_burst = '2.0';
+		set_default(config, 'tx_queue_data2_burst', '2.0');
 
 		let vht_capab = phy_capabilities.vht_capa;
 		
@@ -385,6 +387,11 @@ function device_htmode_append(config) {
 			config.he_oper_centr_freq_seg0_idx = config.vht_oper_centr_freq_seg0_idx;
 		}
 
+		if (config.band == "6g") {
+			config.stationary_ap = true;
+			append_vars(config, [ 'he_6ghz_reg_pwr_type', ]);
+		}
+
 		if (config.he_bss_color_enabled) {
 			if (config.he_spr_non_srg_obss_pd_max_offset)
 				config.he_spr_sr_control |= 1 << 2;
@@ -425,11 +432,6 @@ function device_htmode_append(config) {
 
 		if (config.hw_mode == 'a')
 			append_vars(config, [ 'eht_oper_chwidth', 'eht_oper_centr_freq_seg0_idx' ]);
-
-		if (config.band == "6g") {
-			config.stationary_ap = true;
-			append_vars(config, [ 'he_6ghz_reg_pwr_type', ]);
-		}
 	}
 
 	append_vars(config, [ 'tx_queue_data2_burst', 'stationary_ap' ]);
@@ -483,7 +485,8 @@ function generate(config) {
 	append_vars(config, [ 'noscan' ]);
 
 	/* airtime */
-	append_vars(config, [ 'airtime_mode' ]);
+	if (config.airtime_mode)
+		append_vars(config, [ 'airtime_mode' ]);
 
 	/* assoc/thresholds */
 	append_vars(config, [ 'rssi_reject_assoc_rssi', 'rssi_ignore_probe_request', 'iface_max_num_sta', 'no_probe_resp_if_max_sta' ]);
@@ -546,6 +549,7 @@ export function setup(data) {
 	if (data.config.macaddr_base)
 		append('\n#macaddr_base', data.config.macaddr_base);
 
+	let has_ap;
 	for (let k, interface in data.interfaces) {
 		if (interface.config.mode != 'ap')
 			continue;
@@ -558,6 +562,7 @@ export function setup(data) {
 		setup_interface(k, data, interface.config, interface.vlans, interface.stas, phy_features, owe ? 'owe' : null );
 		if (owe)
 			setup_interface(k, data, interface.config, interface.vlans, interface.stas, phy_features, 'owe-transition');
+		has_ap = true;
 	}
 
 	let config = dump_config(file_name);
@@ -565,13 +570,15 @@ export function setup(data) {
 	let msg = {
 		phy: data.phy,
 		radio: data.config.radio,
-		config: file_name,
+		config: has_ap ? file_name : "",
 		prev_config: file_name + '.prev'
 	};
+	if (!global.ubus.list('hostapd'))
+		system('ubus wait_for hostapd');
 	let ret = global.ubus.call('hostapd', 'config_set', msg);
 
 	if (ret)
 		netifd.add_process('/usr/sbin/hostapd', ret.pid, true, true);
-	else if (fs.access('/usr/sbin/hostapd', 'x'))
+	else
 		netifd.setup_failed('HOSTAPD_START_FAILED');
 };
