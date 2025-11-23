@@ -80,12 +80,26 @@
     };
 };
 
+/* paritaly taken from ipq5018-mr5500.dts
+ * ===============================================================
+ *     _______________________         _______________________
+ *    |        IPQ5018        |       |        QCA8337        |
+ *    |                       |       | +--------+   +------+ |
+ *    | +------+   +--------+ |       | |  Phy2  |---| WAN  | |
+ *    | | MAC1 |---| Uniphy |-+-SGMII-| +--------+   +------+ |
+ *    | +------+   +--------+ |       | +--------+   +------+ |
+ *    |                       |       | |  Phy3  |---| LAN  | |
+ *    |                       |       | +--------+   +------+ |
+ *    |_______________________|       |_______________________|
+ *
+ * ===============================================================
+ */
 &switch {
 	status = "okay";
 	switch_mac_mode = <MAC_MODE_SGMII_CHANNEL0>;
 
 	qcom,port_phyinfo {
-		// MAC0 -> GE Phy -> QCA8337 Phy2
+		// MAC0 -> GE Phy -> QCA8337
 		port@0 {
 			port_id = <1>;
 			mdiobus = <&mdio0>;
@@ -101,25 +115,11 @@
 	};
 };
 
-// MAC0 -> GE Phy
-/*
-&dp1 {
-    status = "okay";
-
-    label = "lan";
-    nvmem-cells = <&hw_mac_addr 0>;
-    nvmem-cell-names = "mac-address";
-    phy-mode = "sgmii";
-};
-*/
-
 // MAC1 ---SGMII---> QCA8337 SerDes
 &dp2 {
 	status = "okay";
     nvmem-cells = <&hw_mac_addr 1>;
     nvmem-cell-names = "mac-address";
-	// nvmem-cells = <&macaddr_dp2>;
-	// nvmem-cell-names = "mac-address";
 
 	fixed-link {
 		speed = <1000>;
@@ -148,61 +148,9 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			port@1 {
-				reg = <1>;
-				label = "lan1";
-				phy-handle = <&qca8337_0>;
-				phy-mode = "internal";
-
-				leds {
-					#address-cells = <1>;
-					#size-cells = <0>;
-
-					led@0 {
-						reg = <0>;
-						color = <LED_COLOR_ID_GREEN>;
-						function = LED_FUNCTION_LAN;
-						default-state = "keep";
-					};
-
-					led@1 {
-						reg = <1>;
-						color = <LED_COLOR_ID_AMBER>;
-						function = LED_FUNCTION_LAN;
-						default-state = "keep";
-					};
-				};
-			};
-
-			port@2 {
-				reg = <2>;
-				label = "lan2";
-				phy-handle = <&qca8337_1>;
-				phy-mode = "internal";
-
-				leds {
-					#address-cells = <1>;
-					#size-cells = <0>;
-
-					led@0 {
-						reg = <0>;
-						color = <LED_COLOR_ID_GREEN>;
-						function = LED_FUNCTION_LAN;
-						default-state = "keep";
-					};
-
-					led@1 {
-						reg = <1>;
-						color = <LED_COLOR_ID_AMBER>;
-						function = LED_FUNCTION_LAN;
-						default-state = "keep";
-					};
-				};
-			};
-
 			port@3 {
 				reg = <3>;
-				label = "lan3";
+				label = "wan";
 				phy-handle = <&qca8337_2>;
 				phy-mode = "internal";
 
@@ -228,7 +176,7 @@
 
 			port@4 {
 				reg = <4>;
-				label = "lan4";
+				label = "lan";
 				phy-handle = <&qca8337_3>;
 				phy-mode = "internal";
 
@@ -252,32 +200,6 @@
 				};
 			};
 
-			port@5 {
-				reg = <5>;
-				label = "wan";
-				phy-handle = <&qca8337_4>;
-				phy-mode = "internal";
-
-				leds {
-					#address-cells = <1>;
-					#size-cells = <0>;
-
-					led@0 {
-						reg = <0>;
-						color = <LED_COLOR_ID_GREEN>;
-						function = LED_FUNCTION_WAN;
-						default-state = "keep";
-					};
-
-					led@1 {
-						reg = <1>;
-						color = <LED_COLOR_ID_AMBER>;
-						function = LED_FUNCTION_WAN;
-						default-state = "keep";
-					};
-				};
-			};
-
 			port@6 {
 				reg = <6>;
 				label = "cpu";
@@ -296,29 +218,14 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			// QCA8337 Phy0 -> LAN1
-			qca8337_0: ethernet-phy@0 {
-				reg = <0>;
-			};
-
-			// QCA8337 Phy1 -> LAN2
-			qca8337_1: ethernet-phy@1 {
-				reg = <1>;
-			};
-
-			// QCA8337 Phy2 -> LAN3
+			// QCA8337 Phy2 -> WAN
 			qca8337_2: ethernet-phy@2 {
 				reg = <2>;
 			};
 
-			// QCA8337 Phy3 -> LAN4
+			// QCA8337 Phy3 -> LAN
 			qca8337_3: ethernet-phy@3 {
 				reg = <3>;
-			};
-
-			// QCA8337 Phy4 -> WAN
-			qca8337_4: ethernet-phy@4 {
-				reg = <4>;
 			};
 		};
 	};
