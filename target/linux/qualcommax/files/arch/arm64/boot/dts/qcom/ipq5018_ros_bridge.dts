@@ -85,10 +85,13 @@
  *     _______________________         _______________________
  *    |        IPQ5018        |       |        QCA8337        |
  *    |                       |       | +--------+   +------+ |
- *    | +------+   +--------+ |       | |  Phy3  |---| WAN  | |
+ *    | +------+   +--------+ |       | |  Phy2  |---| LAN  | |
  *    | | MAC1 |---| Uniphy |-+-SGMII-| +--------+   +------+ |
  *    | +------+   +--------+ |       | +--------+   +------+ |
- *    |                       |       | |  Phy2  |---| LAN  | |
+ *    |                       |       | |  Phy3  |---| WAN  | |
+ *    |                       |       | +--------+   +------+ |
+ *    |                       |       | +--------+   +------+ |
+ *    |                       |       | |  Phy4  |---| SFP  | |
  *    |                       |       | +--------+   +------+ |
  *    |_______________________|       |_______________________|
  *
@@ -200,6 +203,32 @@
 				};
 			};
 
+            port@5 {
+				reg = <5>;
+				label = "lansfp";
+				phy-handle = <&qca8337_4>;
+				phy-mode = "internal";
+
+				leds {
+					#address-cells = <1>;
+					#size-cells = <0>;
+
+					led@0 {
+						reg = <0>;
+						color = <LED_COLOR_ID_GREEN>;
+						function = LED_FUNCTION_WAN;
+						default-state = "keep";
+					};
+
+					led@1 {
+						reg = <1>;
+						color = <LED_COLOR_ID_AMBER>;
+						function = LED_FUNCTION_WAN;
+						default-state = "keep";
+					};
+				};
+			};
+
 			port@6 {
 				reg = <6>;
 				label = "cpu";
@@ -226,6 +255,11 @@
 			// QCA8337 Phy3 -> WAN
 			qca8337_3: ethernet-phy@3 {
 				reg = <3>;
+			};
+
+            // QCA8337 Phy4 -> SFP
+			qca8337_4: ethernet-phy@4 {
+				reg = <4>;
 			};
 		};
 	};
