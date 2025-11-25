@@ -9,7 +9,7 @@
 
 / {
     MP_512;
-    model = "Kyrych ros_bridge";
+    model = "BelMax BM-02";
     compatible = "yuncore,ax830", "qcom,ipq5018";
 
     aliases {

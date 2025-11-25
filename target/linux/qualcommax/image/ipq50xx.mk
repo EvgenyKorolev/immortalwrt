@@ -196,12 +196,12 @@ define Device/yuncore_ax850
 endef
 TARGET_DEVICES += yuncore_ax850
 
-define Device/ipq5018_ros_bridge
+define Device/ipq5018_belmax_bm02
 	$(call Device/FitImage)
 	$(call Device/UbiFit)
-	DEVICE_VENDOR := KYRYCH
-	DEVICE_MODEL := KyrychBridge
-	DEVICE_DTS := ipq5018_ros_bridge
+	DEVICE_VENDOR := BelMax
+	DEVICE_MODEL := BM-02
+	DEVICE_DTS := ipq5018-belmax-bm02
 	BLOCKSIZE := 128k
 	PAGESIZE := 2048
 	SOC := ipq5018
@@ -214,4 +214,4 @@ ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),)
 	ARTIFACT/initramfs-factory.ubi := append-image-stage initramfs-uImage.itb | ubinize-kernel
 endif
 endef
-TARGET_DEVICES += ipq5018_ros_bridge
+TARGET_DEVICES += ipq5018_belmax_bm02
