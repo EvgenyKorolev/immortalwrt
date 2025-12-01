@@ -432,23 +432,26 @@
         nand-bus-width = <8>;
 
         partitions {
-            compatible = "fixed-partitions";
+            compatible = "fixed-partitions", "ubi";
             #address-cells = <1>;
             #size-cells = <1>;
 
             partition@0 {
                 label = "0:TRAINING";
                 reg = <0x00 0x80000>;
+                compatible = "ubi";
             };
 
             partition@80000 {
                 label = "rootfs";
                 reg = <0x80000 0x3e00000>;
+                compatible = "ubi";
             };
 
             partition@3e80000 {
                 label = "rootfs_1";
                 reg = <0x3e80000 0x3e00000>;
+                compatible = "ubi";
             };
         };
     };
@@ -515,6 +518,7 @@
     memory-region = <&q6_mem_regions>;
     firmware-name = "ath11k/IPQ5018/hw1.0/q6_fw.mdt",
             "ath11k/IPQ5018/hw1.0/m3_fw.mdt",
+            "ath11k/QCN6122/hw1.0/q6_fw.mdt",
             "ath11k/QCN6122/hw1.0/m3_fw.mdt";
 
     // IPQ5018
