@@ -518,11 +518,11 @@
     memory-region = <&q6_mem_regions>;
     firmware-name = "ath11k/IPQ5018/hw1.0/q6_fw.mdt",
             "ath11k/IPQ5018/hw1.0/m3_fw.mdt",
-            "ath11k/QCN6122/hw1.0/q6_fw.mdt",
             "ath11k/QCN6122/hw1.0/m3_fw.mdt";
 
     // IPQ5018
     q6_wcss_pd1: pd-1 {
+        compatible = "qcom,ipq5018-wcss-pcie-mpd";
         firmware-name = "ath11k/IPQ5018/hw1.0/q6_fw.mdt";
 
         resets =
@@ -566,6 +566,7 @@
 
     // QCN6122 5G
     q6_wcss_pd3: pd-3 {
+        compatible = "qcom,ipq5018-wcss-pcie-mpd";
         firmware-name = "ath11k/IPQ5018/hw1.0/q6_fw.mdt";
 
         interrupts-extended =
