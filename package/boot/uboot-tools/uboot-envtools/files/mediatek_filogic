@@ -30,7 +30,7 @@ cmcc,a10-ubootmod|\
 comfast,cf-wr632ax-ubootmod|\
 cudy,tr3000-v1-ubootmod|\
 h3c,magic-nx30-pro|\
-imou,lc-hx3001|\
+imou,hx21|\
 jcg,q30-pro|\
 livinet,zr-3020-ubootmod|\
 mercusys,mr90x-v1-ubi|\
@@ -94,6 +94,7 @@ konka,komi-a31)
 	;;
 buffalo,wsr-6000ax8|\
 mercusys,mr80x-v3|\
+mercusys,mr85x|\
 mercusys,mr90x-v1|\
 routerich,ax3000|\
 routerich,ax3000-v1|\
