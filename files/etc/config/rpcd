@@ -11,6 +11,5 @@ config login
 config login
 	option username 'user'
 	option password '$p$user'
-	list read 'luci'
-	list read 'uci'
-        list write 'uci.wireless'
+	list read '*'
+    list write 'luci-user'
