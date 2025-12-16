@@ -1,3 +1,8 @@
+#!/bin/sh
+
+echo 'user:x:2:2:Linux User,,,:/home/user:/bin/ash' >> /etc/passwd
+
+cat > /etc/shadow << 'EOF'
 root:$5$ZE6xcM0EhydDmI8S$C2MPzvNAKxjZsWyeR4UUlb3Z5YzDrzBIy12Nr7edQT6:20435:0:99999:7:::
 daemon:*:0:0:99999:7:::
 ftp:*:0:0:99999:7:::
@@ -8,3 +13,12 @@ dnsmasq:x:0:0:99999:7:::
 logd:x:0:0:99999:7:::
 ubus:x:0:0:99999:7:::
 user:$5$p048GyAXxbwKMAZb$3ht8TXBRaWcSx7PFf8S.67HvMszlb5SI/Z.0C6wtLs4:20434:0:99999:7:::
+EOF
+
+chmod 600 /etc/shadow
+mkdir -p /home/user
+chown 2:2 /home/user
+chmod 755 /home/user
+
+rm -f /etc/uci-defaults/02_users
+exit 0
