@@ -34,3 +34,5 @@ git-src
 .cproject
 .ccache
 .vscode*
+
+scripts/config/.qconf-moc.cc.cmd

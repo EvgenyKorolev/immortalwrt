@@ -1,0 +1,42 @@
+#!/bin/sh
+
+uci get rpcd.user >/dev/null 2>&1 && exit 0
+
+cat > /etc/config/rpcd << 'EOF'
+config rpcd
+    option socket '/var/run/ubus/ubus.sock'
+    option timeout '30'
+
+config login
+    option username 'root'
+    option password '$p$root'
+    list read '*'
+    list write '*'
+
+config login
+    option username 'user'
+    option password '$p$user'
+    option timeout '300'
+    list read 'luci-base'
+    list read 'luci-base-network-status'
+    list read 'luci-mod-status-channel_analysis'
+    list read 'luci-mod-status-firewall'
+    list read 'luci-mod-status-index'
+    list read 'luci-mod-status-index-dhcp'
+    list read 'luci-mod-status-index-dsl'
+    list read 'luci-mod-status-index-ports'
+    list read 'luci-mod-status-index-storage'
+    list read 'luci-mod-status-index-wifi'
+    list read 'luci-mod-status-logs'
+    list read 'luci-mod-status-realtime'
+    list read 'luci-mod-status-routes'
+    list read 'luci-mod-status-routes-json'
+    list read 'unauthenticated'
+EOF
+
+# 3. Перезапуск
+/etc/init.d/rpcd restart
+
+# 4. Самоудаление
+rm -f /etc/uci-defaults/01_users_rpcd
+exit 0
