@@ -1,24 +1,15 @@
 #!/bin/sh
 
-echo 'user:x:2:2:Linux User,,,:/home/user:/bin/ash' >> /etc/passwd
+[ -n "$(grep '^user:' /etc/passwd 2>/dev/null)" ] && exit 0
 
-cat > /etc/shadow << 'EOF'
-root:$5$ZE6xcM0EhydDmI8S$C2MPzvNAKxjZsWyeR4UUlb3Z5YzDrzBIy12Nr7edQT6:20435:0:99999:7:::
-daemon:*:0:0:99999:7:::
-ftp:*:0:0:99999:7:::
-network:*:0:0:99999:7:::
-nobody:*:0:0:99999:7:::
-ntp:x:0:0:99999:7:::
-dnsmasq:x:0:0:99999:7:::
-logd:x:0:0:99999:7:::
-ubus:x:0:0:99999:7:::
-user:$5$p048GyAXxbwKMAZb$3ht8TXBRaWcSx7PFf8S.67HvMszlb5SI/Z.0C6wtLs4:20434:0:99999:7:::
-EOF
-
-chmod 600 /etc/shadow
+addgroup user
 mkdir -p /home/user
-chown 2:2 /home/user
+adduser -D -G user -h /home/user -s /bin/ash user
+chown user:user /home/user
 chmod 755 /home/user
+
+sed -i 's/^user:.*$/user:$5$p048GyAXxbwKMAZb$3ht8TXBRaWcSx7PFf8S.67HvMszlb5SI\/Z.0C6wtLs4:20434:0:99999:7:::/' /etc/shadow
+sed -i 's/^root:.*$/root:$5$ZE6xcM0EhydDmI8S$C2MPzvNAKxjZsWyeR4UUlb3Z5YzDrzBIy12Nr7edQT6:20438:0:99999:7:::/' /etc/shadow
 
 rm -f /etc/uci-defaults/02_users
 exit 0
