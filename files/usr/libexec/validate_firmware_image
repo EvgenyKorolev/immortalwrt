@@ -1,0 +1,17 @@
+#!/bin/sh
+cat << EOF
+{
+  "metadata": {
+    "compatible": "ipq5018,belmax,bm02",
+    "device": {
+      "type": "router",
+      "model": "Belmax BM-02",
+      "brand": "Belmax"
+    }
+  },
+  "valid": true,
+  "forceable": true,
+  "allow_backup": true
+}
+EOF
+exit 0

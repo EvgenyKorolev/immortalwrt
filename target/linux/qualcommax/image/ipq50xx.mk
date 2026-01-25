@@ -203,7 +203,7 @@ define Device/ipq5018_belmax_bm02
 	DEVICE_MODEL := BM-02
 	DEVICE_DTS := ipq5018-belmax-bm02
 	DEVICE_BOARD_NAME := ipq5018,belmax,bm02
-    DEVICE_VERSION := "r2026.01.18"
+	DEVICE_VERSION := "r2026.01.18"
 	BLOCKSIZE := 128k
 	PAGESIZE := 2048
 	SOC := ipq5018

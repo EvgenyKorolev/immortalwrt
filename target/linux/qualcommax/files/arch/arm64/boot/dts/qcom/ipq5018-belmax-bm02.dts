@@ -10,7 +10,7 @@
 / {
     MP_512;
     model = "BelMax BM-02";
-    compatible = "yuncore,ax830", "qcom,ipq5018";
+    compatible = "yuncore,ax830", "ipq5018,belmax,bm02", "qcom,ipq5018";
 
     aliases {
         ethernet1 = &dp2;
