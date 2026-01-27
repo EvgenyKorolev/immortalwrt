@@ -1,0 +1,21 @@
+{
+  "admin/belmax/": {
+    "title": "BelMax",
+    "order": 60,
+    "action": {
+      "type": "firstchild"
+    },
+    "depends": {
+      "acl": [ "luci-app-belmax" ]
+    }
+  },
+
+  "admin/belmax/belmax": {
+    "title": "Setup",
+    "order": 1,
+    "action": {
+      "type": "view",
+      "path": "belmax/belmax"
+    }
+  }
+}
