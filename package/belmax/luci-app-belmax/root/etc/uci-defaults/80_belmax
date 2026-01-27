@@ -1,0 +1,16 @@
+#!/bin/sh
+
+cat > /etc/config/belmax << EOF
+config common 'common'
+    option hostname 'BelMax'
+    option ap_ssid 'BelMax'
+    option ap_key '12345678'
+
+config mesh 'mesh'
+    option mesh_ssid 'bmmesh'
+    option mesh_key '12345678'
+
+config ptp 'ptp'
+EOF
+
+return 0
