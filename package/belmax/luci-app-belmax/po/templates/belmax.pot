@@ -1,0 +1,46 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8"
+
+#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:14
+msgid "Simple device setup"
+msgstr ""
+
+#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:16
+msgid "Common params"
+msgstr ""
+
+#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:19
+msgid "Hostname"
+msgstr ""
+
+#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:38
+msgid "Mesh params"
+msgstr ""
+
+#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:41
+msgid "Mesh SSID"
+msgstr ""
+
+#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:45
+msgid "Mesh passwd"
+msgstr ""
+
+#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:52
+msgid "Setup mesh"
+msgstr ""
+
+#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:55
+msgid "Setting up mesh ..."
+msgstr ""
+
+#: applications/luci-app-belmax/root/usr/share/luci/menu.d/luci-app-belmax.json:3
+msgid "BelMax"
+msgstr ""
+
+#: applications/luci-app-belmax/root/usr/share/luci/menu.d/luci-app-belmax.json:14
+msgid "Setup"
+msgstr ""
+
+#: applications/luci-app-belmax/root/usr/share/rpcd/acl.d/luci-app-belmax.json:3
+msgid "Grant UCI and RPC access to LuCI BelMax"
+msgstr ""

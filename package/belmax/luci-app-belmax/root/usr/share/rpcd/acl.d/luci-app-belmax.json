@@ -1,0 +1,22 @@
+{
+    "luci-app-belmax": {
+        "description": "Grant UCI and RPC access to LuCI BelMax",
+        "read": {
+            "ubus": {
+                "luci.belmax": [ ],
+                "file": [ "exec" ]
+            },
+            "uci": [ "belmax" ]
+        },
+        "write": {
+            "file": {
+                "/usr/bin/setup-mesh": [ "exec" ]
+            },
+            "ubus": {
+                "luci.belmax": [ ],
+                "file": [ "exec" ]
+            },
+            "uci": [ "belmax" ]
+        }
+    }
+}
