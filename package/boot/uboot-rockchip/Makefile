@@ -5,9 +5,9 @@
 include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
-PKG_VERSION:=2025.10
+PKG_VERSION:=2026.01
 PKG_RELEASE:=1
-PKG_HASH:=b4f032848e56cc8f213ad59f9132c084dbbb632bc29176d024e58220e0efdf4a
+PKG_HASH:=b60d5865cefdbc75da8da4156c56c458e00de75a49b80c1a2e58a96e30ad0d54
 
 PKG_MAINTAINER:=Sarah Maedel <openwrt@tbspace.de>
 
@@ -182,6 +182,13 @@ define U-Boot/rk3528/Default
   DEPENDS:=+PACKAGE_u-boot-$(1):trusted-firmware-a-rk3528
   ATF:=$(RK3528_ATF)
   TPL:=$(RK3528_TPL)
+endef
+
+define U-Boot/mangopi-m28c-rk3528
+  $(U-Boot/rk3528/Default)
+  NAME:=MangoPi M28C
+  BUILD_DEVICES:= \
+    widora_mangopi-m28c
 endef
 
 define U-Boot/mangopi-m28k-rk3528
@@ -522,6 +529,7 @@ UBOOT_TARGETS := \
   roc-cc-rk3328 \
   rock64-rk3328 \
   rock-pi-e-rk3328 \
+  mangopi-m28c-rk3528 \
   mangopi-m28k-rk3528 \
   radxa-e20c-rk3528 \
   rock-2-rk3528 \
@@ -588,7 +596,7 @@ define Build/InstallDev
 ifneq ($(TPL),)
 	$(CP) $(PKG_BUILD_DIR)/u-boot-rockchip.bin $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-u-boot-rockchip.bin
 else
-	$(STAGING_DIR_IMAGE)/loaderimage --pack --uboot $(PKG_BUILD_DIR)/u-boot-dtb.bin $(PKG_BUILD_DIR)/uboot.img 0x200000
+	$(STAGING_DIR_IMAGE)/loaderimage --pack --uboot $(PKG_BUILD_DIR)/u-boot-dtb.bin $(PKG_BUILD_DIR)/uboot.img 0x800000
 	$(CP) $(PKG_BUILD_DIR)/uboot.img $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-uboot.img
 endif
 endef
