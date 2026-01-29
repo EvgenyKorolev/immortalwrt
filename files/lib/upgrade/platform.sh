@@ -72,12 +72,11 @@ platform_check_image() {
 }
 
 platform_pre_upgrade() {
-    /etc/init.d/* stop 2>/dev/null
     killall dropbear sshd ntpd dnsmasq wpa_supplicant 2>/dev/null
     sleep 5
     rm -rf /tmp/* /var/tmp/* /var/run/*.pid 2>/dev/null
     mount -o remount,ro / 2>/dev/null
-    return 0;
+    return 0
 }
 
 platform_do_upgrade() {
@@ -86,5 +85,5 @@ platform_do_upgrade() {
     remove_oem_ubi_volume bt_fw
     remove_oem_ubi_volume wifi_fw
     nand_do_upgrade "$1"
-    return 0;
+    return 0
 }
