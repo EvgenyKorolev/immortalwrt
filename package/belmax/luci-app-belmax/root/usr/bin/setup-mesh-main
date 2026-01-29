@@ -1,0 +1,73 @@
+#!/bin/sh
+
+mssid=$1
+mkey=$2
+hname=$3
+
+scriptname=$(basename $0)
+snamemain="setup-mesh-main"
+snamenode="setup-mesh-node"
+
+if [ -z "$mssid" -o -z "$mkey" ]; then
+    echo "usage: $scriptname mesh_ssid mesh_passwd [hostname]"
+    echo "  '$snamemain' creates main mesh router"
+    echo "             set hostname <hosname>"
+    echo "             lan static ip 192.168.1.1"
+    echo "             enable dhcp server on lan"
+    echo "             create mesh interface <mesh_ssid> on 5GHz"
+    echo "  '$snamenode' creates mesh node router"
+    echo "             set hostname <hosname>"
+    echo "             lan dhcp client"
+    echo "             disable dhcp server on lan"
+    echo "             create mesh interface <mesh_ssid> on 5GHz"
+    exit 1
+fi
+
+# set hostname
+if [ -n "$hname" ]; then
+    uci set belmax.common.hostname=$hname
+    uci set system.@system[0].hostname=$hname
+fi
+
+# setup mesh interface
+uci set belmax.mesh.mesh_ssid=$mssid
+uci set belmax.mesh.mesh_key=$mkey
+
+meshopt="wireless.wifinet2"
+
+uci set $meshopt=wifi-iface
+uci set $meshopt.device='radio1'
+uci set $meshopt.mode='mesh'
+uci set $meshopt.encryption='sae'
+uci set $meshopt.mesh_id=$mssid
+uci set $meshopt.mesh_fwding='1'
+uci set $meshopt.mesh_rssi_threshold='0'
+uci set $meshopt.key=$mkey
+uci set $meshopt.network='lan wan'
+
+if [ "$scriptname" == "setup-mesh-main" ]; then
+    # setup static lan ip
+    uci set network.lan.proto='static'
+    uci set network.lan.ipaddr='192.168.1.1'
+    uci set network.lan.netmask='255.255.255.0'
+
+    # enable dhcp server on lan
+    uci del dhcp.lan.ignore
+fi
+
+if [ "$scriptname" == "setup-mesh-node" ]; then
+    # setup dhcp client on lan
+    uci set network.lan.proto='dhcp'
+    uci del network.lan.ipaddr
+    uci del network.lan.ip6assign
+
+    # disable dhcp server on lan
+    uci set dhcp.lan.ignore='1'
+    uci del dhcp.lan.dhcpv6
+fi
+
+uci commit
+reload_config
+
+sleep 5
+echo "Mesh OK"
