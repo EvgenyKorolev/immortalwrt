@@ -56,7 +56,7 @@ return view.extend({
 			var mssid = optmssid.formvalue('mesh')
 			var mkey = optmkey.formvalue('mesh')
 
-			fs.exec('/usr/bin/setup-mesh', [ mssid, mkey, hname ])
+			fs.exec('/usr/bin/setup-mesh-main', [ mssid, mkey, hname ])
 				.then(function(res){
 					ui.addNotification(null, E('p', `${res.stdout.trim().replace(/\n/g, '<br>')}`));
 				})

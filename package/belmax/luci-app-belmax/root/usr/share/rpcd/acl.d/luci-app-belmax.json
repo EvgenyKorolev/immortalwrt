@@ -10,7 +10,8 @@
         },
         "write": {
             "file": {
-                "/usr/bin/setup-mesh": [ "exec" ]
+                "/usr/bin/setup-mesh-main": [ "exec" ],
+                "/usr/bin/setup-mesh-node": [ "exec" ]
             },
             "ubus": {
                 "luci.belmax": [ ],
