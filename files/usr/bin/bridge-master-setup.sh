@@ -8,6 +8,7 @@ sleep 3
 rm -f /etc/config/network /etc/config/wireless
 ip link delete br-lan 2>/dev/null || true
 ip link delete br-bridge 2>/dev/null || true
+ip addr flush dev wan 2>/dev/null || true
 
 cat > /etc/config/network << 'EOF'
 config interface 'loopback'
@@ -69,10 +70,11 @@ config wifi-iface 'ptp_ap'
 	option ssid 'BelMax-PTP'
 	option encryption 'psk2'
 	option key 'ptp_password'
-	option wds '1'  # WDS ВКЛЮЧЕН - пробрасывает DHCP!
+	option wds '1'
 EOF
 
 uci commit
+rm -f /var/run/network.state /tmp/network.* 2>/dev/null || true
 /etc/init.d/network restart
 wifi reload
 sleep 25
@@ -81,9 +83,12 @@ sleep 25
 /etc/init.d/dnsmasq restart
 /etc/init.d/firewall disable
 
-echo "=== Мастер готов ==="
-echo "Статус:"
-ip link show type bridge
-ip addr show br-bridge
-iwinfo radio1
-echo "DHCP статус: $(pgrep -x dnsmasq && echo 'активен' || echo 'остановлен')"
+echo "=== Master готов ==="
+echo "Мост:"
+ifconfig br-bridge 2>/dev/null | head -3 || echo "br-bridge не найден"
+echo ""
+echo "WiFi radio1:"
+iwinfo phy1-ap0 info 2>/dev/null | head -3 || echo "radio1 не готов"
+echo ""
+echo "DHCP:"
+pgrep -x dnsmasq && echo "активен (PID: $(pgrep -x dnsmasq))" || echo "остановлен"
