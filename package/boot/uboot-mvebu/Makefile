@@ -8,10 +8,10 @@
 include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
-PKG_VERSION:=2025.10
+PKG_VERSION:=2026.10
 PKG_RELEASE:=1
 
-PKG_HASH:=b4f032848e56cc8f213ad59f9132c084dbbb632bc29176d024e58220e0efdf4a
+PKG_HASH:=3f856da3cbbc93af51ff95fde18588a348b4a26723b01d9841e999d988481015
 
 include $(INCLUDE_DIR)/u-boot.mk
 include $(INCLUDE_DIR)/package.mk
@@ -70,9 +70,16 @@ endef
 define U-Boot/rb5009
   NAME:=MikroTik RB5009
   BUILD_SUBTARGET:=cortexa72
-  BUILD_DEVICES:=mikrotik_rb5009
+  BUILD_DEVICES:=mikrotik_rb5009ug mikrotik_rb5009upr
   UBOOT_CONFIG:=mvebu_rb5009
   UBOOT_IMAGE:=u-boot.elf
+endef
+
+define U-Boot/atlas
+  NAME:=RIPE Atlas Probe v5
+  BUILD_DEVICES:=ripe_atlas-v5
+  BUILD_SUBTARGET:=cortexa53
+  UBOOT_CONFIG:=turris_mox
 endef
 
 UBOOT_TARGETS:= \
@@ -81,6 +88,7 @@ UBOOT_TARGETS:= \
 	helios4 \
 	omnia \
 	espressobin \
+	atlas \
 	uDPU \
 	eDPU \
 	rb5009

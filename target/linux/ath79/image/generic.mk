@@ -113,10 +113,10 @@ define Build/nec-enc
 endef
 
 define Build/nec-fw
-  ( stat -c%s $@ | tr -d "\n" | dd bs=16 count=1 conv=sync; ) >> $@
+  ( stat -c%s $@ | tr -d "\n" | dd bs=16 count=1 conv=sync iflag=fullblock; ) >> $@
   ( \
-    echo -n -e "$(1)" | dd bs=16 count=1 conv=sync; \
-    echo -n "0.0.00" | dd bs=16 count=1 conv=sync; \
+    echo -n -e "$(1)" | dd bs=16 count=1 conv=sync iflag=fullblock; \
+    echo -n "0.0.00" | dd bs=16 count=1 conv=sync iflag=fullblock; \
     dd if=$@; \
   ) > $@.new
   mv $@.new $@
@@ -162,7 +162,10 @@ define Build/zyxel-tar-bz2
 	mkdir -p $@.tmp
 	mv $@ $@.tmp/$(word 2,$(1))
 	cp $(KDIR)/loader-$(DEVICE_NAME).uImage $@.tmp/$(word 1,$(1)).lzma.uImage
-	$(TAR) -cjf $@ -C $@.tmp .
+	$(TAR) -cjf $@ -C $@.tmp --no-recursion \
+		--numeric-owner --owner=0 --group=0 --mode=go-w \
+		$(if $(SOURCE_DATE_EPOCH),--mtime="@$(SOURCE_DATE_EPOCH)") \
+		. ./$(word 1,$(1)).lzma.uImage ./$(word 2,$(1))
 	rm -rf $@.tmp
 endef
 
@@ -577,7 +580,7 @@ define Device/avm_fritz300e
   SOC := ar7242
   IMAGE_SIZE := 15232k
   DEVICE_MODEL := FRITZ!WLAN Repeater 300E
-  DEVICE_PACKAGES += rssileds -swconfig
+  DEVICE_PACKAGES += rssileds kmod-phy-intel-xway -swconfig
   SUPPORTED_DEVICES += fritz300e
 endef
 TARGET_DEVICES += avm_fritz300e
@@ -688,7 +691,7 @@ define Device/buffalo_wzr-hp-g300nh
   SOC := ar9132
   BUFFALO_PRODUCT := WZR-HP-G300NH
   BUFFALO_HWVER := 1
-  DEVICE_PACKAGES := kmod-gpio-cascade kmod-mux-gpio kmod-usb2 kmod-usb-ledtrig-usbport
+  DEVICE_PACKAGES := kmod-gpio-line-mux kmod-mux-gpio kmod-usb2 kmod-usb-ledtrig-usbport
   BLOCKSIZE := 128k
   IMAGE_SIZE := 32128k
   SUPPORTED_DEVICES += wzr-hp-g300nh
@@ -1318,6 +1321,27 @@ define Device/dlink_dir-842-c3
 endef
 TARGET_DEVICES += dlink_dir-842-c3
 
+define Device/dragino2_common
+  SOC := ar9330
+  DEVICE_VENDOR := Dragino
+  DEVICE_PACKAGES := kmod-usb-chipidea2
+  IMAGE_SIZE := 16000k
+  SUPPORTED_DEVICES += dragino2
+endef
+
+define Device/dragino_lps8
+  $(Device/dragino2_common)
+  DEVICE_MODEL := LPS8
+  DEVICE_PACKAGES += kmod-spi-gpio kmod-spi-dev
+endef
+TARGET_DEVICES += dragino_lps8
+
+define Device/dragino_ms14
+  $(Device/dragino2_common)
+  DEVICE_MODEL := MS14
+endef
+TARGET_DEVICES += dragino_ms14
+
 define Device/elecom_wab
   DEVICE_VENDOR := ELECOM
   IMAGE_SIZE := 14336k
@@ -1789,7 +1813,7 @@ define Device/hak5_lan-turtle
   TPLINK_HWID := 0x5348334c
   IMAGES := sysupgrade.bin
   DEVICE_PACKAGES := kmod-usb-chipidea2 -iwinfo -kmod-ath9k -swconfig \
-	-uboot-envtools -wpad-basic-openssl
+	-uboot-envtools -wpad-openssl
   SUPPORTED_DEVICES += lan-turtle
 endef
 TARGET_DEVICES += hak5_lan-turtle
@@ -1802,7 +1826,7 @@ define Device/hak5_packet-squirrel
   TPLINK_HWID := 0x5351524c
   IMAGES := sysupgrade.bin
   DEVICE_PACKAGES := kmod-usb-chipidea2 -iwinfo -kmod-ath9k -swconfig \
-	-uboot-envtools -wpad-basic-openssl
+	-uboot-envtools -wpad-openssl
   SUPPORTED_DEVICES += packet-squirrel
 endef
 TARGET_DEVICES += hak5_packet-squirrel
@@ -1839,6 +1863,7 @@ define Device/huawei_ap5030dn
   DEVICE_PACKAGES := ath10k-firmware-qca988x-ct kmod-ath10k-ct
   LOADER_TYPE := bin
   LOADER_FLASH_OFFS := 0x111DC0
+  LZMA_TEXT_START := 0x82800000
   KERNEL_SIZE := 15360k
   IMAGE_SIZE := 30720k
   COMPILE := loader-$(1).bin
@@ -1854,6 +1879,7 @@ define Device/huawei_ap6010dn
   DEVICE_MODEL := AP6010DN
   LOADER_TYPE := bin
   LOADER_FLASH_OFFS := 0x111DC0
+  LZMA_TEXT_START := 0x82800000
   KERNEL_SIZE := 15360k
   IMAGE_SIZE := 30720k
   COMPILE := loader-$(1).bin
@@ -1868,7 +1894,7 @@ define Device/iodata_etg3-r
   DEVICE_VENDOR := I-O DATA
   DEVICE_MODEL := ETG3-R
   IMAGE_SIZE := 7680k
-  DEVICE_PACKAGES := -iwinfo -kmod-ath9k -wpad-basic-openssl
+  DEVICE_PACKAGES := -iwinfo -kmod-ath9k -wpad-openssl
 endef
 TARGET_DEVICES += iodata_etg3-r
 
@@ -1928,7 +1954,7 @@ define Device/jjplus_ja76pf2
   SOC := ar7161
   DEVICE_VENDOR := jjPlus
   DEVICE_MODEL := JA76PF2
-  DEVICE_PACKAGES += -kmod-ath9k -swconfig -wpad-basic-openssl -uboot-envtools fconfig kmod-hwmon-lm75
+  DEVICE_PACKAGES += -kmod-ath9k -swconfig -wpad-openssl -uboot-envtools fconfig kmod-hwmon-lm75
   LOADER_TYPE := bin
   LOADER_FLASH_OFFS := 0x60000
   COMPILE := loader-$(1).bin
@@ -2236,13 +2262,14 @@ define Device/netgear_wndap360
   $(Device/netgear_generic)
   SOC := ar7161
   DEVICE_MODEL := WNDAP360
+  DEVICE_PACKAGES := kmod-owl-loader
   IMAGE_SIZE := 7744k
-  BLOCKSIZE := 256k
-  KERNEL := kernel-bin | append-dtb | gzip | uImage gzip
-  KERNEL_INITRAMFS := kernel-bin | append-dtb | uImage none
+  LOADER_TYPE := bin
+  KERNEL := kernel-bin | append-dtb | lzma | loader-kernel | uImage none
+  KERNEL_INITRAMFS := $$(KERNEL)
   IMAGES := sysupgrade.bin
-  IMAGE/sysupgrade.bin := append-kernel | pad-to 64k | append-rootfs | pad-rootfs | \
-	check-size | append-metadata
+  IMAGE/sysupgrade.bin := append-kernel | pad-to $$$$(BLOCKSIZE) | \
+	append-rootfs | pad-rootfs | check-size | append-metadata
 endef
 TARGET_DEVICES += netgear_wndap360
 
@@ -3007,20 +3034,6 @@ define Device/siemens_ws-ap3610
 endef
 TARGET_DEVICES += siemens_ws-ap3610
 
-define Device/sitecom_wlr-7100
-  SOC := ar1022
-  DEVICE_VENDOR := Sitecom
-  DEVICE_MODEL := WLR-7100
-  DEVICE_PACKAGES := ath10k-firmware-qca988x-ct kmod-ath10k-ct-smallbuffers kmod-usb2
-  IMAGES += factory.dlf
-  IMAGE/factory.dlf := append-kernel | pad-to $$$$(BLOCKSIZE) | \
-	append-rootfs | pad-rootfs | check-size | \
-	senao-header -r 0x222 -p 0x53 -t 2
-  IMAGE_SIZE := 7488k
-  DEFAULT := n
-endef
-TARGET_DEVICES += sitecom_wlr-7100
-
 define Device/sitecom_wlr-8100
   SOC := qca9558
   DEVICE_VENDOR := Sitecom
@@ -3130,7 +3143,7 @@ define Device/teltonika_rut300
   DEVICE_VENDOR := Teltonika
   DEVICE_MODEL := RUT300
   SUPPORTED_TELTONIKA_DEVICES := teltonika,rut30x
-  DEVICE_PACKAGES := -kmod-ath9k -uboot-envtools -wpad-basic-openssl kmod-usb2
+  DEVICE_PACKAGES := -kmod-ath9k -uboot-envtools -wpad-openssl kmod-usb2
   IMAGE_SIZE := 15552k
   IMAGES += factory.bin
   IMAGE/factory.bin = append-kernel | pad-to $$$$(BLOCKSIZE) | \

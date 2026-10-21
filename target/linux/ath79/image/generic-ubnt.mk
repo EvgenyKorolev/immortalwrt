@@ -58,7 +58,7 @@ TARGET_DEVICES += ubnt_edgeswitch-5xp
 define Device/ubnt_edgeswitch-8xp
   $(Device/ubnt-sw)
   DEVICE_MODEL := EdgeSwitch 8XP
-  DEVICE_PACKAGES += kmod-dsa-b53-mdio
+  DEVICE_PACKAGES += kmod-dsa-b53-mdio -swconfig
   DEVICE_COMPAT_VERSION := 1.1
   DEVICE_COMPAT_MESSAGE := Config cannot be migrated from swconfig to DSA
 endef
@@ -143,6 +143,14 @@ define Device/ubnt_nanostation-loco-m-xw
 endef
 TARGET_DEVICES += ubnt_nanostation-loco-m-xw
 
+define Device/ubnt_nanostation-loco-m-xw-v2
+  $(Device/ubnt-xw)
+  DEVICE_MODEL := Nanostation Loco M
+  DEVICE_VARIANT := XW v2
+  DEVICE_PACKAGES += rssileds -kmod-usb2
+endef
+TARGET_DEVICES += ubnt_nanostation-loco-m-xw-v2
+
 define Device/ubnt_nanostation-m-xw
   $(Device/ubnt-xw)
   DEVICE_MODEL := Nanostation M
@@ -212,7 +220,7 @@ endef
 TARGET_DEVICES += ubnt_rocket-m
 
 define Device/ubnt_routerstation_common
-  DEVICE_PACKAGES := -kmod-ath9k -wpad-basic-openssl -uboot-envtools kmod-usb-ohci \
+  DEVICE_PACKAGES := -kmod-ath9k -wpad-openssl -uboot-envtools kmod-usb-ohci \
 	kmod-usb2 fconfig
   DEVICE_VENDOR := Ubiquiti
   SOC := ar7161
@@ -321,6 +329,7 @@ define Device/ubnt_unifi-ap-outdoor-plus
   $(Device/ubnt-unifi-jffs2)
   DEVICE_MODEL := UniFi AP Outdoor+
   SUPPORTED_DEVICES += unifi-outdoor-plus
+  DEFAULT := n
 endef
 TARGET_DEVICES += ubnt_unifi-ap-outdoor-plus
 
@@ -330,5 +339,6 @@ define Device/ubnt_unifi-ap-pro
   DEVICE_MODEL := UniFi AP Pro
   UBNT_CHIP := ar934x
   SUPPORTED_DEVICES += uap-pro
+  DEFAULT := n
 endef
 TARGET_DEVICES += ubnt_unifi-ap-pro

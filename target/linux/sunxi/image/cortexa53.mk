@@ -36,6 +36,11 @@ define Device/sun50i-h618
   $(Device/sun50i)
 endef
 
+define Device/sun55i-a527
+  SOC := sun55i-a527
+  $(Device/sun50i)
+endef
+
 define Device/friendlyarm_nanopi-neo-plus2
   DEVICE_VENDOR := FriendlyARM
   DEVICE_MODEL := NanoPi NEO Plus2
@@ -105,6 +110,14 @@ define Device/pine64_sopine-baseboard
 endef
 TARGET_DEVICES += pine64_sopine-baseboard
 
+define Device/radxa_cubie-a5e
+  DEVICE_VENDOR := Radxa
+  DEVICE_MODEL := Cubie A5E
+  DEVICE_PACKAGES := kmod-aic8800-sdio kmod-nvme wpad-openssl
+  $(Device/sun55i-a527)
+endef
+TARGET_DEVICES += radxa_cubie-a5e
+
 define Device/xunlong_orangepi-one-plus
   $(Device/sun50i-h6)
   DEVICE_VENDOR := Xunlong
@@ -122,6 +135,7 @@ TARGET_DEVICES += xunlong_orangepi-pc2
 define Device/xunlong_orangepi-zero2
   DEVICE_VENDOR := Xunlong
   DEVICE_MODEL := Orange Pi Zero 2
+  DEVICE_PACKAGES := kmod-uwe5622 wpad-openssl
   $(Device/sun50i-h616)
 endef
 TARGET_DEVICES += xunlong_orangepi-zero2
@@ -136,6 +150,7 @@ TARGET_DEVICES += xunlong_orangepi-zero2w
 define Device/xunlong_orangepi-zero3
   DEVICE_VENDOR := Xunlong
   DEVICE_MODEL := Orange Pi Zero 3
+  DEVICE_PACKAGES := kmod-uwe5622 wpad-openssl
   $(Device/sun50i-h618)
 endef
 TARGET_DEVICES += xunlong_orangepi-zero3

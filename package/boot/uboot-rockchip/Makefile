@@ -5,9 +5,9 @@
 include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
-PKG_VERSION:=2026.01
+PKG_VERSION:=2026.10
 PKG_RELEASE:=1
-PKG_HASH:=b60d5865cefdbc75da8da4156c56c458e00de75a49b80c1a2e58a96e30ad0d54
+PKG_HASH:=3f856da3cbbc93af51ff95fde18588a348b4a26723b01d9841e999d988481015
 
 PKG_MAINTAINER:=Sarah Maedel <openwrt@tbspace.de>
 
@@ -71,6 +71,13 @@ define U-Boot/nanopi-r2s-rk3328
   NAME:=NanoPi R2S
   BUILD_DEVICES:= \
     friendlyarm_nanopi-r2s
+endef
+
+define U-Boot/nanopi-r2s-plus-rk3328
+  $(U-Boot/rk3328/Default)
+  NAME:=NanoPi R2S Plus
+  BUILD_DEVICES:= \
+    friendlyarm_nanopi-r2s-plus
 endef
 
 define U-Boot/orangepi-r1-plus-rk3328
@@ -198,6 +205,13 @@ define U-Boot/mangopi-m28k-rk3528
     widora_mangopi-m28k
 endef
 
+define U-Boot/nanopi-zero2-rk3528
+  $(U-Boot/rk3528/Default)
+  NAME:=NanoPi Zero2
+  BUILD_DEVICES:= \
+    friendlyarm_nanopi-zero2
+endef
+
 define U-Boot/radxa-e20c-rk3528
   $(U-Boot/rk3528/Default)
   NAME:=E20C
@@ -296,6 +310,13 @@ define U-Boot/fastrhino-r68s-rk3568
     lunzn_fastrhino-r68s
 endef
 
+define U-Boot/graperain-g3568-v2-rk3568
+  $(U-Boot/rk3568/Default)
+  NAME:=Graperain G3568 v2
+  BUILD_DEVICES:= \
+    graperain_g3568-v2
+endef
+
 define U-Boot/lyt-t68m-rk3568
   $(U-Boot/rk3568/Default)
   NAME:=LYT T68M
@@ -391,11 +412,11 @@ define U-Boot/rk3576/Default
   TPL:=$(RK3576_TPL)
 endef
 
-define U-Boot/generic-rk3576
+define U-Boot/nanopi-m5-rk3576
   $(U-Boot/rk3576/Default)
-  NAME:=Generic RK3576
+  NAME:=NanoPi M5
   BUILD_DEVICES:= \
-    friendlyarm_nanopi-r76s
+    friendlyarm_nanopi-m5
 endef
 
 define U-Boot/photonicat2-rk3576
@@ -403,6 +424,13 @@ define U-Boot/photonicat2-rk3576
   NAME:=Photonicat2
   BUILD_DEVICES:= \
     ariaboard_photonicat2
+endef
+
+define U-Boot/nanopi-r76s-rk3576
+  $(U-Boot/rk3576/Default)
+  NAME:=NanoPi R76S
+  BUILD_DEVICES:= \
+    friendlyarm_nanopi-r76s
 endef
 
 define U-Boot/rock-4d-rk3576
@@ -524,6 +552,7 @@ UBOOT_TARGETS := \
   nanopi-r2c-rk3328 \
   nanopi-r2c-plus-rk3328 \
   nanopi-r2s-rk3328 \
+  nanopi-r2s-plus-rk3328 \
   orangepi-r1-plus-rk3328 \
   orangepi-r1-plus-lts-rk3328 \
   roc-cc-rk3328 \
@@ -531,6 +560,7 @@ UBOOT_TARGETS := \
   rock-pi-e-rk3328 \
   mangopi-m28c-rk3528 \
   mangopi-m28k-rk3528 \
+  nanopi-zero2-rk3528 \
   radxa-e20c-rk3528 \
   rock-2-rk3528 \
   nanopi-r3s-rk3566 \
@@ -542,6 +572,7 @@ UBOOT_TARGETS := \
   easepi-r1-rk3568 \
   fastrhino-r66s-rk3568 \
   fastrhino-r68s-rk3568 \
+  graperain-g3568-v2-rk3568 \
   lyt-t68m-rk3568 \
   mmbox-anas3035-rk3568 \
   mrkaio-m68s-rk3568 \
@@ -554,7 +585,8 @@ UBOOT_TARGETS := \
   rock-3a-rk3568 \
   rock-3b-rk3568 \
   sige3-rk3568 \
-  generic-rk3576 \
+  nanopi-m5-rk3576 \
+  nanopi-r76s-rk3576 \
   photonicat2-rk3576 \
   rock-4d-rk3576 \
   cyber3588-aib-rk3588 \
