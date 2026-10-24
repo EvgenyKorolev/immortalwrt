@@ -2,6 +2,7 @@
 
 #include "ipq5018.dtsi"
 #include "ipq5018-ess.dtsi"
+#include "ipq5018-qcn6122.dtsi"
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
@@ -591,8 +592,8 @@
     };
 };
 
-&wifi0 {
-    // IPQ5018
+&wifi {
+    // IPQ5018 2.4GHz
     status = "okay";
     qcom,rproc = <&q6_wcss_pd1>;
     qcom,ath11k-calibration-variant = "Yuncore-AX830";
@@ -601,7 +602,7 @@
 };
 
 &wifi1 {
-    // QCN6122 5G
+    // QCN6122 5GHz
     status = "okay";
     qcom,rproc = <&q6_wcss_pd3>;
     qcom,userpd-subsys-name = "q6v5_wcss_userpd3";
