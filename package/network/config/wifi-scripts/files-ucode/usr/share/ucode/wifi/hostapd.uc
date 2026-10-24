@@ -14,6 +14,8 @@ import * as fs from 'fs';
 const NL80211_EXT_FEATURE_ENABLE_FTM_RESPONDER = 33;
 const NL80211_EXT_FEATURE_RADAR_BACKGROUND = 61;
 
+const WLAN_CIPHER_SUITE_GCMP_256 = 0x000fac09;
+
 let phy_features = {};
 let phy_capabilities = {};
 
@@ -30,8 +32,10 @@ function set_device_defaults(config) {
 	/* validate band */
 	if (config.band == '2g')
 		config.hw_mode = 'g';
-	else if (config.band in [ '5g', '6g', '60g' ])
+	else if (config.band in [ '5g', '6g' ])
 		config.hw_mode = 'a';
+	else if (config.band == '60g')
+		config.hw_mode = 'ad';
 	else
 		switch (config.hw_mode) {
 		case 'a':
@@ -283,6 +287,17 @@ function device_htmode_append(config) {
 				}
 			config.op_class = 137;
 			config.eht_oper_chwidth = 7;
+
+			/*
+			 * Set HE operation values for 160MHz backward compatibility
+			 * with WiFi 6E clients. Pick the 160MHz half that contains
+			 * the primary channel.
+			 */
+			config.he_oper_chwidth = 3;
+			if (config.channel < config.eht_oper_centr_freq_seg0_idx)
+				config.he_oper_centr_freq_seg0_idx = config.eht_oper_centr_freq_seg0_idx - 16;
+			else
+				config.he_oper_centr_freq_seg0_idx = config.eht_oper_centr_freq_seg0_idx + 16;
 			break;
 
 		case 'HE40':
@@ -340,12 +355,12 @@ function device_htmode_append(config) {
 		if (vht_capab & 0x800 && config.su_beamformer)
 			config.vht_capab += '[SOUNDING-DIMENSION-' + min(((vht_capab >> 16) & 3) + 1, config.beamformer_antennas) + ']';
 		if (vht_capab & 0x1000 && config.su_beamformee)
-			config.vht_capab += '[BF-ANTENNA-' + min(((vht_capab >> 13) & 3) + 1, config.beamformer_antennas) + ']';
+			config.vht_capab += '[BF-ANTENNA-' + min(((vht_capab >> 13) & 3) + 1, config.beamformee_antennas) + ']';
 
 		/* supported Channel widths */
-		if ((vht_capab & 0xc) == 8 && config.vht160 <= 2)
+		if ((vht_capab & 0xc) == 8 && config.vht160 >= 2)
 			config.vht_capab += '[VHT160-80PLUS80]';
-		else if ((vht_capab & 0xc) == 4 && config.vht160 <= 2)
+		else if (((vht_capab & 0xc) == 4 || (vht_capab & 0xc) == 8) && config.vht160 >= 1)
 			config.vht_capab += '[VHT160]';
 
 		/* maximum MPDU length */
@@ -383,8 +398,15 @@ function device_htmode_append(config) {
 		config.ieee80211ax = true;
 
 		if (config.hw_mode == 'a') {
-			config.he_oper_chwidth = config.vht_oper_chwidth;
-			config.he_oper_centr_freq_seg0_idx = config.vht_oper_centr_freq_seg0_idx;
+			/*
+			 * Only set HE values from VHT if not already set.
+			 * For 6GHz 320MHz, these are pre-set for 160MHz backward
+			 * compatibility with WiFi 6E clients.
+			 */
+			if (!config.he_oper_chwidth)
+				config.he_oper_chwidth = config.vht_oper_chwidth;
+			if (!config.he_oper_centr_freq_seg0_idx)
+				config.he_oper_centr_freq_seg0_idx = config.vht_oper_centr_freq_seg0_idx;
 		}
 
 		if (config.band == "6g") {
@@ -449,6 +471,8 @@ function device_capabilities(config) {
 
 	phy_capabilities.ht_capa = band.ht_capa ?? 0;
 	phy_capabilities.vht_capa = band.vht_capa ?? 0;
+	phy_capabilities.he_mac_cap = [];
+	phy_capabilities.he_phy_cap = [];
 	for (let iftype in band.iftype_data) {
 		if (!iftype.iftypes.ap)
 			continue;
@@ -458,6 +482,7 @@ function device_capabilities(config) {
 
 	phy_features.ftm_responder = device_extended_features(phy.extended_features, NL80211_EXT_FEATURE_ENABLE_FTM_RESPONDER);
 	phy_features.radar_background = device_extended_features(phy.extended_features, NL80211_EXT_FEATURE_RADAR_BACKGROUND);
+	phy_features.cipher_gcmp256 = WLAN_CIPHER_SUITE_GCMP_256 in (phy.cipher_suites ?? []);
 }
 
 function generate(config) {
@@ -489,7 +514,7 @@ function generate(config) {
 		append_vars(config, [ 'airtime_mode' ]);
 
 	/* assoc/thresholds */
-	append_vars(config, [ 'rssi_reject_assoc_rssi', 'rssi_reject_assoc_timeout', 'rssi_ignore_probe_request', 'iface_max_num_sta', 'no_probe_resp_if_max_sta' ]);
+	append_vars(config, [ 'rssi_reject_assoc_rssi', 'rssi_reject_assoc_timeout', 'rssi_ignore_probe_request', 'iface_max_num_sta' ]);
 
 	/* ACS / Radar*/
 	if (!phy_features.radar_background || config.band != '5g')

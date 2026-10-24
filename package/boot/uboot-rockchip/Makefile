@@ -73,6 +73,13 @@ define U-Boot/nanopi-r2s-rk3328
     friendlyarm_nanopi-r2s
 endef
 
+define U-Boot/nanopi-r2s-plus-rk3328
+  $(U-Boot/rk3328/Default)
+  NAME:=NanoPi R2S Plus
+  BUILD_DEVICES:= \
+    friendlyarm_nanopi-r2s-plus
+endef
+
 define U-Boot/orangepi-r1-plus-rk3328
   $(U-Boot/rk3328/Default)
   NAME:=Orange Pi R1 Plus
@@ -184,6 +191,20 @@ define U-Boot/rk3528/Default
   TPL:=$(RK3528_TPL)
 endef
 
+define U-Boot/mangopi-m28c-rk3528
+  $(U-Boot/rk3528/Default)
+  NAME:=MangoPi M28C
+  BUILD_DEVICES:= \
+    widora_mangopi-m28c
+endef
+
+define U-Boot/mangopi-m28k-rk3528
+  $(U-Boot/rk3528/Default)
+  NAME:=MangoPi M28K
+  BUILD_DEVICES:= \
+    widora_mangopi-m28k
+endef
+
 define U-Boot/radxa-e20c-rk3528
   $(U-Boot/rk3528/Default)
   NAME:=E20C
@@ -261,6 +282,13 @@ define U-Boot/bpi-r2-pro-rk3568
     sinovoip_bpi-r2-pro
 endef
 
+define U-Boot/easepi-r1-rk3568
+  $(U-Boot/rk3568/Default)
+  NAME:=LinkEase EasePi R1
+  BUILD_DEVICES:= \
+    linkease_easepi-r1
+endef
+
 define U-Boot/fastrhino-r66s-rk3568
   $(U-Boot/rk3568/Default)
   NAME:=FastRhino R66S
@@ -273,13 +301,6 @@ define U-Boot/fastrhino-r68s-rk3568
   NAME:=FastRhino R68S
   BUILD_DEVICES:= \
     lunzn_fastrhino-r68s
-endef
-
-define U-Boot/generic-rk3568
-  $(U-Boot/rk3568/Default)
-  NAME:=Generic RK3566/RK3568 board
-  BUILD_DEVICES:= \
-    linkease_easepi-r1
 endef
 
 define U-Boot/lyt-t68m-rk3568
@@ -382,6 +403,13 @@ define U-Boot/generic-rk3576
   NAME:=Generic RK3576
   BUILD_DEVICES:= \
     friendlyarm_nanopi-r76s
+endef
+
+define U-Boot/photonicat2-rk3576
+  $(U-Boot/rk3576/Default)
+  NAME:=Photonicat2
+  BUILD_DEVICES:= \
+    ariaboard_photonicat2
 endef
 
 define U-Boot/rock-4d-rk3576
@@ -503,11 +531,14 @@ UBOOT_TARGETS := \
   nanopi-r2c-rk3328 \
   nanopi-r2c-plus-rk3328 \
   nanopi-r2s-rk3328 \
+  nanopi-r2s-plus-rk3328 \
   orangepi-r1-plus-rk3328 \
   orangepi-r1-plus-lts-rk3328 \
   roc-cc-rk3328 \
   rock64-rk3328 \
   rock-pi-e-rk3328 \
+  mangopi-m28c-rk3528 \
+  mangopi-m28k-rk3528 \
   radxa-e20c-rk3528 \
   rock-2-rk3528 \
   nanopi-r3s-rk3566 \
@@ -516,9 +547,9 @@ UBOOT_TARGETS := \
   rock-3c-rk3566 \
   9tripod-x3568-v4-rk3568 \
   bpi-r2-pro-rk3568 \
+  easepi-r1-rk3568 \
   fastrhino-r66s-rk3568 \
   fastrhino-r68s-rk3568 \
-  generic-rk3568 \
   lyt-t68m-rk3568 \
   mmbox-anas3035-rk3568 \
   mrkaio-m68s-rk3568 \
@@ -532,6 +563,7 @@ UBOOT_TARGETS := \
   rock-3b-rk3568 \
   sige3-rk3568 \
   generic-rk3576 \
+  photonicat2-rk3576 \
   rock-4d-rk3576 \
   cyber3588-aib-rk3588 \
   nanopc-t6-rk3588 \
@@ -566,6 +598,16 @@ UBOOT_CUSTOMIZE_CONFIG := \
 UBOOT_MAKE_FLAGS += \
   BL31=$(STAGING_DIR_IMAGE)/$(ATF) \
   $(if $(TPL),ROCKCHIP_TPL=$(STAGING_DIR_IMAGE)/$(TPL))
+
+define Build/Configure
+	$(call Build/Configure/U-Boot)
+
+ifneq ($(filter %rk3576,$(BUILD_VARIANT)),)
+	$(TARGET_CC) -nostdlib -ffreestanding -Os -S -o $(PKG_BUILD_DIR)/rk3576-boost.S $(PKG_BUILD_DIR)/rk3576-boost.c
+	$(TARGET_CROSS)as -o $(PKG_BUILD_DIR)/rk3576-boost.o $(PKG_BUILD_DIR)/rk3576-boost.S
+	$(TARGET_CROSS)objcopy -O binary -j .text $(PKG_BUILD_DIR)/rk3576-boost.o $(PKG_BUILD_DIR)/rk3576-boost.bin
+endif
+endef
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(STAGING_DIR_IMAGE)

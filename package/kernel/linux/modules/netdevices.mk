@@ -123,7 +123,7 @@ $(eval $(call KernelPackage,atl1e))
 define KernelPackage/libie
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Intel Ethernet library
-  DEPENDS:=@!LINUX_6_6 +kmod-libeth
+  DEPENDS:=+kmod-libeth
   KCONFIG:=CONFIG_LIBIE
   HIDDEN:=1
   FILES:=$(LINUX_DIR)/drivers/net/ethernet/intel/libie/libie.ko
@@ -139,7 +139,6 @@ $(eval $(call KernelPackage,libie))
 define KernelPackage/libeth
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Common Intel Ethernet library
-  DEPENDS:=@!LINUX_6_6
   KCONFIG:=CONFIG_LIBETH
   HIDDEN:=1
   FILES:=$(LINUX_DIR)/drivers/net/ethernet/intel/libeth/libeth.ko
@@ -202,7 +201,7 @@ $(eval $(call KernelPackage,mii))
 define KernelPackage/mdio-devres
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Supports MDIO device registration
-  DEPENDS:=+kmod-libphy +(TARGET_armsr||TARGET_bcm27xx_bcm2708||TARGET_loongarch64||TARGET_malta||TARGET_tegra):kmod-of-mdio
+  DEPENDS:=+kmod-libphy +(TARGET_armsr||TARGET_bcm27xx_bcm2708||TARGET_econet||TARGET_loongarch64||TARGET_malta||TARGET_tegra):kmod-of-mdio
   KCONFIG:=CONFIG_MDIO_DEVRES
   HIDDEN:=1
   FILES:=$(LINUX_DIR)/drivers/net/phy/mdio_devres.ko
@@ -219,7 +218,7 @@ $(eval $(call KernelPackage,mdio-devres))
 define KernelPackage/mdio-gpio
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:= Supports GPIO lib-based MDIO busses
-  DEPENDS:=+kmod-libphy @GPIO_SUPPORT +(TARGET_armsr||TARGET_bcm27xx_bcm2708||TARGET_loongarch64||TARGET_malta||TARGET_tegra):kmod-of-mdio
+  DEPENDS:=+kmod-libphy @GPIO_SUPPORT +(TARGET_armsr||TARGET_bcm27xx_bcm2708||TARGET_econet||TARGET_loongarch64||TARGET_malta||TARGET_tegra):kmod-of-mdio
   KCONFIG:= \
 	CONFIG_MDIO_BITBANG \
 	CONFIG_MDIO_GPIO
@@ -610,7 +609,7 @@ $(eval $(call KernelPackage,phy-airoha-en8811h))
 define KernelPackage/phy-aquantia
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Aquantia Ethernet PHYs
-  DEPENDS:=+kmod-libphy +kmod-hwmon-core +LINUX_6_6:kmod-lib-crc-ccitt +!LINUX_6_6:kmod-lib-crc-itu-t
+  DEPENDS:=+kmod-libphy +kmod-hwmon-core +kmod-lib-crc-itu-t
   KCONFIG:=CONFIG_AQUANTIA_PHY
   FILES:=$(LINUX_DIR)/drivers/net/phy/aquantia/aquantia.ko
   AUTOLOAD:=$(call AutoLoad,18,aquantia,1)
@@ -621,6 +620,40 @@ define KernelPackage/phy-aquantia/description
 endef
 
 $(eval $(call KernelPackage,phy-aquantia))
+
+
+define KernelPackage/phy-motorcomm
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=Motorcomm Ethernet PHYs
+  DEPENDS:=+kmod-libphy
+  KCONFIG:=CONFIG_MOTORCOMM_PHY
+  FILES:=$(LINUX_DIR)/drivers/net/phy/motorcomm.ko
+  AUTOLOAD:=$(call AutoLoad,18,motorcomm,1)
+endef
+
+define KernelPackage/phy-motorcomm/description
+  Supports the Motorcomm 8511/8521/8531/8531S/8821 Ethernet PHYs
+endef
+
+$(eval $(call KernelPackage,phy-motorcomm))
+
+
+define KernelPackage/dwmac-motorcomm
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=Motorcomm PCI DWMAC support
+  DEPENDS:=@PCI_SUPPORT +kmod-phy-motorcomm +kmod-stmmac-core
+  KCONFIG:=CONFIG_DWMAC_MOTORCOMM
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/stmicro/stmmac/dwmac-motorcomm.ko
+  AUTOLOAD:=$(call AutoProbe,dwmac-motorcomm,1)
+endef
+
+define KernelPackage/dwmac-motorcomm/description
+  Supports the Motorcomm DWMAC-based PCI Ethernet controllers.
+  Currently only YT6801 is supported.
+endef
+
+$(eval $(call KernelPackage,dwmac-motorcomm))
+
 
 define KernelPackage/dsa
   SUBMENU:=$(NETWORK_DEVICES_MENU)
@@ -813,7 +846,7 @@ $(eval $(call KernelPackage,dsa-rtl8365mb))
 define KernelPackage/dsa-ks8995
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Micrel/Kendin KS8995 Ethernet DSA Switch
-  DEPENDS:=@!LINUX_6_6 +kmod-dsa +kmod-dsa-notag
+  DEPENDS:=+kmod-dsa +kmod-dsa-notag
   FILES:= $(LINUX_DIR)/drivers/net/dsa/ks8995.ko
   KCONFIG:= CONFIG_NET_DSA_KS8995 \
 	CONFIG_SPI=y \
@@ -831,7 +864,7 @@ $(eval $(call KernelPackage,dsa-ks8995))
 define KernelPackage/dsa-vsc73xx
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Vitesse VSC73XX DSA switch family support
-  DEPENDS:=@!LINUX_6_6 +kmod-dsa +kmod-phy-vitesse +kmod-fixed-phy
+  DEPENDS:=+kmod-dsa +kmod-phy-vitesse +kmod-fixed-phy
   KCONFIG:= \
 	CONFIG_NET_DSA_VITESSE_VSC73XX \
 	CONFIG_NET_DSA_TAG_VSC73XX_8021Q
@@ -850,7 +883,7 @@ $(eval $(call KernelPackage,dsa-vsc73xx))
 define KernelPackage/dsa-vsc73xx-spi
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Vitesse VSC73XX SPI support
-  DEPENDS:=@!LINUX_6_6 +kmod-dsa-vsc73xx
+  DEPENDS:=+kmod-dsa-vsc73xx
   KCONFIG:= CONFIG_NET_DSA_VITESSE_VSC73XX_SPI
   FILES:= $(LINUX_DIR)/drivers/net/dsa/vitesse-vsc73xx-spi.ko
   AUTOLOAD:=$(call AutoProbe,vitesse-vsc73xx-spi)
@@ -866,7 +899,7 @@ $(eval $(call KernelPackage,dsa-vsc73xx-spi))
 define KernelPackage/dsa-vsc73xx-platform
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Vitesse VSC73XX platform support
-  DEPENDS:=@!LINUX_6_6 +kmod-dsa-vsc73xx
+  DEPENDS:=+kmod-dsa-vsc73xx
   KCONFIG:= CONFIG_NET_DSA_VITESSE_VSC73XX_PLATFORM
   FILES:= $(LINUX_DIR)/drivers/net/dsa/vitesse-vsc73xx-platform.ko
   AUTOLOAD:=$(call AutoProbe,vitesse-vsc73xx-platform)
@@ -931,7 +964,7 @@ $(eval $(call KernelPackage,switch-rtl8306))
 define KernelPackage/switch-rtl8366-smi
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Realtek RTL8366 SMI switch interface support
-  DEPENDS:=@GPIO_SUPPORT +kmod-swconfig +(TARGET_armsr||TARGET_bcm27xx_bcm2708||TARGET_loongarch64||TARGET_malta||TARGET_tegra):kmod-of-mdio
+  DEPENDS:=@GPIO_SUPPORT +kmod-swconfig +(TARGET_armsr||TARGET_bcm27xx_bcm2708||TARGET_econet||TARGET_loongarch64||TARGET_malta||TARGET_tegra):kmod-of-mdio
   KCONFIG:=CONFIG_RTL8366_SMI
   FILES:=$(LINUX_DIR)/drivers/net/phy/rtl8366_smi.ko
   AUTOLOAD:=$(call AutoLoad,42,rtl8366_smi,1)
@@ -1208,6 +1241,7 @@ define KernelPackage/r8169
     CONFIG_R8169_LEDS=y
   FILES:=$(LINUX_DIR)/drivers/net/ethernet/realtek/r8169.ko
   AUTOLOAD:=$(call AutoProbe,r8169,1)
+  DEFAULT_VARIANT:=1
 endef
 
 define KernelPackage/r8169/description
@@ -1309,7 +1343,7 @@ $(eval $(call KernelPackage,igb))
 define KernelPackage/igbvf
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Intel(R) 82576 Virtual Function Ethernet support
-  DEPENDS:=@PCI_SUPPORT @TARGET_x86 +kmod-i2c-core +kmod-i2c-algo-bit +kmod-ptp
+  DEPENDS:=@PCI_SUPPORT @(TARGET_loongarch64||TARGET_x86) +kmod-i2c-core +kmod-i2c-algo-bit +kmod-ptp
   KCONFIG:=CONFIG_IGBVF \
     CONFIG_IGB_HWMON=y \
     CONFIG_IGB_DCA=n
@@ -1364,7 +1398,7 @@ $(eval $(call KernelPackage,ixgbevf))
 define KernelPackage/i40e
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Intel(R) Ethernet Controller XL710 Family support
-  DEPENDS:=@PCI_SUPPORT +kmod-ptp +!LINUX_6_6:kmod-libie
+  DEPENDS:=@PCI_SUPPORT +kmod-ptp +kmod-libie
   KCONFIG:=CONFIG_I40E \
     CONFIG_I40E_DCB=y
   FILES:=$(LINUX_DIR)/drivers/net/ethernet/intel/i40e/i40e.ko
@@ -1381,7 +1415,7 @@ $(eval $(call KernelPackage,i40e))
 define KernelPackage/ice
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Intel(R) Ethernet Controller E810 Series support
-  DEPENDS:=@PCI_SUPPORT +kmod-ptp +!LINUX_6_6:kmod-hwmon-core +!LINUX_6_6:kmod-libie
+  DEPENDS:=@PCI_SUPPORT +kmod-ptp +kmod-hwmon-core +kmod-libie
   KCONFIG:=CONFIG_ICE \
     CONFIG_ICE_HWMON=y \
     CONFIG_ICE_HWTS=y \
@@ -1400,7 +1434,7 @@ $(eval $(call KernelPackage,ice))
 define KernelPackage/iavf
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Intel(R) Ethernet Adaptive Virtual Function support
-  DEPENDS:=@PCI_SUPPORT +!LINUX_6_6:kmod-libie
+  DEPENDS:=@PCI_SUPPORT +kmod-libie
   KCONFIG:= \
        CONFIG_I40EVF \
        CONFIG_IAVF
@@ -1721,24 +1755,6 @@ define KernelPackage/vmxnet3/description
 endef
 
 $(eval $(call KernelPackage,vmxnet3))
-
-
-define KernelPackage/spi-ks8995
-  SUBMENU:=$(NETWORK_DEVICES_MENU)
-  TITLE:=Micrel/Kendin KS8995 Ethernet switch control
-  DEPENDS:=@LINUX_6_6
-  FILES:=$(LINUX_DIR)/drivers/net/phy/spi_ks8995.ko
-  KCONFIG:=CONFIG_MICREL_KS8995MA \
-	CONFIG_SPI=y \
-	CONFIG_SPI_MASTER=y
-  AUTOLOAD:=$(call AutoLoad,50,spi_ks8995)
-endef
-
-define KernelPackage/spi-ks8995/description
-  Kernel module for Micrel/Kendin KS8995 ethernet switch
-endef
-
-$(eval $(call KernelPackage,spi-ks8995))
 
 
 define KernelPackage/ethoc
@@ -2109,7 +2125,7 @@ $(eval $(call KernelPackage,pcs-qcom-ipq9574))
 define KernelPackage/pcs-xpcs
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Synopsis DesignWare PCS driver
-  DEPENDS:=@(TARGET_x86_64||TARGET_armsr) +kmod-phylink +!LINUX_6_6:kmod-mdio-devres
+  DEPENDS:=@(TARGET_armsr||TARGET_loongarch64||TARGET_x86_64) +kmod-phylink +kmod-mdio-devres
   KCONFIG:=CONFIG_PCS_XPCS
   FILES:=$(LINUX_DIR)/drivers/net/pcs/pcs_xpcs.ko
   AUTOLOAD:=$(call AutoLoad,20,pcs_xpcs)
@@ -2121,7 +2137,7 @@ $(eval $(call KernelPackage,pcs-xpcs))
 define KernelPackage/stmmac-core
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Synopsis Ethernet Controller core (NXP,STMMicro,others)
-  DEPENDS:=@TARGET_x86_64||TARGET_armsr +kmod-pcs-xpcs +kmod-ptp
+  DEPENDS:=@(TARGET_armsr||TARGET_loongarch64||TARGET_x86_64) +kmod-pcs-xpcs +kmod-ptp
   KCONFIG:=CONFIG_STMMAC_ETH \
     CONFIG_STMMAC_SELFTESTS=n \
     CONFIG_STMMAC_PLATFORM \
@@ -2155,7 +2171,7 @@ $(eval $(call KernelPackage,igc))
 define KernelPackage/hinic
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Huawei Intelligent PCIE Network Interface Card support
-  DEPENDS:=@PCI_SUPPORT @TARGET_x86||TARGET_armsr_armv8
+  DEPENDS:=@PCI_SUPPORT @(TARGET_armsr_armv8||TARGET_loongarch64||TARGET_x86)
   FILES:=$(LINUX_DIR)/drivers/net/ethernet/huawei/hinic/hinic.ko
   KCONFIG:=CONFIG_HINIC
   AUTOLOAD:=$(call AutoProbe,hinic)
@@ -2292,6 +2308,7 @@ endef
 
 $(eval $(call KernelPackage,mhi-wwan-mbim))
 
+
 define KernelPackage/mtk-t7xx
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=MediaTek T7xx 5G modem
@@ -2309,6 +2326,7 @@ define KernelPackage/mtk-t7xx/description
 endef
 
 $(eval $(call KernelPackage,mtk-t7xx))
+
 
 define KernelPackage/atlantic
   SUBMENU:=$(NETWORK_DEVICES_MENU)
@@ -2329,7 +2347,7 @@ $(eval $(call KernelPackage,atlantic))
 define KernelPackage/lan743x
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Microchip LAN743x PCI Express Gigabit Ethernet NIC
-  DEPENDS:=@PCI_SUPPORT +kmod-ptp +kmod-mdio-devres +kmod-fixed-phy +!LINUX_6_6:kmod-phylink
+  DEPENDS:=@PCI_SUPPORT +kmod-ptp +kmod-mdio-devres +kmod-fixed-phy +kmod-phylink
   KCONFIG:=CONFIG_LAN743X
   FILES:=$(LINUX_DIR)/drivers/net/ethernet/microchip/lan743x.ko
   AUTOLOAD:=$(call AutoProbe,lan743x)
@@ -2372,3 +2390,21 @@ define KernelPackage/enc28j60/description
 endef
 
 $(eval $(call KernelPackage,enc28j60))
+
+define KernelPackage/sparx5-switch
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=Sparx5 switch driver
+  DEPENDS:=@TARGET_microchipsw +kmod-phylink +kmod-ptp
+  KCONFIG:= \
+  CONFIG_SPARX5_SWITCH \
+  CONFIG_LAN969X_SWITCH=y \
+  CONFIG_SPARX5_DCB=y
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/microchip/sparx5/sparx5-switch.ko
+  AUTOLOAD:=$(call AutoProbe,sparx5-switch,1)
+endef
+
+define KernelPackage/sparx5-switch/description
+  This driver supports the Sparx5 network switch device.
+endef
+
+$(eval $(call KernelPackage,sparx5-switch))

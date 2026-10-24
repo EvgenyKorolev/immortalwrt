@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * prom.c
- * Early intialization code for the Realtek RTL838X SoC
+ * Early initialization code for the Realtek RTL838X SoC
  *
  * based on the original BSP by
  * Copyright (C) 2006-2012 Tony Wu (tonywu@realtek.com)
@@ -76,6 +76,25 @@ static int rtlsmp_register(void)
 
 #endif
 
+static void __init apply_early_quirks(void)
+{
+	if (soc_info.family == RTL8380_FAMILY_ID) {
+		/*
+		 * Open up write protected registers. SDK opens/closes this whenever needed. For
+		 * simplicity always work with an "open" register set.
+		 */
+		sw_w32(0x3, RTL838X_INT_RW_CTRL);
+		/*
+		 * Disable 4 byte address mode of flash controller. If this bit is not cleared
+		 * the watchdog cannot reset the SoC. The SDK changes this short before restart.
+		 * Until this quirk was implemented all RTL838x devices ran with this disabled
+		 * because of a coding error. As no issues were detected keep the behaviour
+		 * until more details are known.
+		 */
+		sw_w32_mask(BIT(30), 0, RTL838X_PLL_CML_CTRL);
+	}
+}
+
 void __init device_tree_init(void)
 {
 	if (!fdt_check_header(&__appended_dtb)) {
@@ -102,11 +121,10 @@ const char *get_system_type(void)
 	return rtl83xx_system_type;
 }
 
-static void __init rtl838x_read_details(uint32_t model)
+static void __init rtl838x_read_details(u32 model)
 {
-	uint32_t chip_info, ext_version, tmp;
+	u32 chip_info, ext_version, tmp;
 
-	sw_w32(0x3, RTL838X_INT_RW_CTRL);
 	sw_w32(0xa << 28, RTL838X_CHIP_INFO);
 
 	chip_info = sw_r32(RTL838X_CHIP_INFO);
@@ -128,9 +146,9 @@ static void __init rtl838x_read_details(uint32_t model)
 	}
 }
 
-static void __init rtl839x_read_details(uint32_t model)
+static void __init rtl839x_read_details(u32 model)
 {
-	uint32_t chip_info;
+	u32 chip_info;
 
 	sw_w32(0xa << 28, RTL839X_CHIP_INFO);
 
@@ -143,9 +161,9 @@ static void __init rtl839x_read_details(uint32_t model)
 		soc_info.testchip = true;
 }
 
-static void __init rtl93xx_read_details(uint32_t model)
+static void __init rtl93xx_read_details(u32 model)
 {
-	uint32_t chip_info;
+	u32 chip_info;
 
 	sw_w32(0xa << 16, RTL93XX_CHIP_INFO);
 
@@ -158,15 +176,16 @@ static void __init rtl93xx_read_details(uint32_t model)
 		soc_info.testchip = true;
 }
 
-static uint32_t __init read_model(void)
+static u32 __init read_model(void)
 {
-	uint32_t model, id;
+	u32 model, id;
 
 	model = sw_r32(RTL838X_MODEL_NAME_INFO);
 	id = model >> 16 & 0xffff;
 	if ((id >= 0x8380 && id <= 0x8382) || id == 0x8330 || id == 0x8332) {
 		soc_info.id = id;
 		soc_info.family = RTL8380_FAMILY_ID;
+		apply_early_quirks();
 		rtl838x_read_details(model);
 		return model;
 	}
@@ -176,6 +195,7 @@ static uint32_t __init read_model(void)
 	if ((id >= 0x8391 && id <= 0x8396) || (id >= 0x8351 && id <= 0x8353)) {
 		soc_info.id = id;
 		soc_info.family = RTL8390_FAMILY_ID;
+		apply_early_quirks();
 		rtl839x_read_details(model);
 		return model;
 	}
@@ -185,11 +205,13 @@ static uint32_t __init read_model(void)
 	if (id >= 0x9301 && id <= 0x9303) {
 		soc_info.id = id;
 		soc_info.family = RTL9300_FAMILY_ID;
+		apply_early_quirks();
 		rtl93xx_read_details(model);
 		return model;
 	} else if (id >= 0x9311 && id <= 0x9313) {
 		soc_info.id = id;
 		soc_info.family = RTL9310_FAMILY_ID;
+		apply_early_quirks();
 		rtl93xx_read_details(model);
 		return model;
 	}
@@ -197,7 +219,7 @@ static uint32_t __init read_model(void)
 	return 0;
 }
 
-static void __init parse_model(uint32_t model)
+static void __init parse_model(u32 model)
 {
 	int val;
 	char suffix = 0;
@@ -212,7 +234,8 @@ static void __init parse_model(uint32_t model)
 	soc_info.name = soc_name;
 }
 
-static void __init rtl83xx_set_system_type(void) {
+static void __init rtl83xx_set_system_type(void)
+{
 	char revision = '?';
 	char *es = "";
 
@@ -229,7 +252,8 @@ static void __init rtl83xx_set_system_type(void) {
 
 void __init prom_init(void)
 {
-	uint32_t model = read_model();
+	u32 model = read_model();
+
 	parse_model(model);
 	rtl83xx_set_system_type();
 

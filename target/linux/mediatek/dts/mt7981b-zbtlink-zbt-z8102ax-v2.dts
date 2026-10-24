@@ -166,8 +166,6 @@
 
 	spi_nand@0 {
 		compatible = "spi-nand";
-		#address-cells = <1>;
-		#size-cells = <1>;
 		reg = <0>;
 
 		spi-max-frequency = <52000000>;
@@ -208,7 +206,7 @@
 
 			nand_rootfs: partition@580000 {
 				label = "ubi";
-				reg = <0x0580000 0x7220000>;
+				reg = <0x0580000 0x7280000>;
 			};
 		};
 	};

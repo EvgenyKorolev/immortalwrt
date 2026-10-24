@@ -15,6 +15,7 @@ ramips_setup_interfaces()
 	confiabits,mt7621-v1|\
 	dlink,dir-x1860-b1|\
 	edup,ep-rt2960s|\
+	edup,ep-rt2983|\
 	gehua,ghl-r-001|\
 	h3c,tx1800-plus|\
 	h3c,tx1801-plus|\
@@ -103,6 +104,7 @@ ramips_setup_interfaces()
 	glinet,gl-mt1300|\
 	iodata,wn-deax1800gr|\
 	iptime,a3002mesh|\
+	iptime,ax2002m|\
 	jcg,q20|\
 	jdcloud,re-sp-01b|\
 	lenovo,newifi-d1|\
@@ -165,6 +167,7 @@ ramips_setup_interfaces()
 	tplink,eap615-wall-v1)
 		ucidef_set_interface_lan "lan0 lan1 lan2 lan3"
 		;;
+	tplink,er605-v1|\
 	tplink,er605-v2)
 		ucidef_set_interfaces_lan_wan "lan2 lan3 lan4 lan5" "wan1"
 		;;
@@ -291,22 +294,16 @@ ramips_setup_macs()
 		wan_mac=$lan_mac
 		label_mac=$lan_mac
 		;;
-	linksys,e5600|\
-	linksys,ea6350-v4|\
-	linksys,ea7300-v1|\
-	linksys,ea7300-v2|\
-	linksys,ea7500-v2|\
-	linksys,ea8100-v1|\
-	linksys,ea8100-v2)
-		lan_mac=$(mtd_get_mac_ascii devinfo hw_mac_addr)
-		wan_mac=$lan_mac
-		label_mac=$lan_mac
-		;;
 	belkin,rt1800|\
 	linksys,e7350)
 		lan_mac=$(mtd_get_mac_ascii Config lan_hwaddr)
 		wan_mac=$(mtd_get_mac_ascii Config wan_hwaddr)
 		label_mac=$lan_mac
+		;;
+	tplink,er605-v1)
+		label_mac=$(mtd_get_mac_uci_config "tddp")
+		lan_mac=$label_mac
+		wan_mac=$(macaddr_add "$label_mac" 1)
 		;;
 	tplink,er605-v2)
 		CI_UBIPART="firmware"

@@ -11,6 +11,10 @@
 / {
 	aliases {
 		serial0 = &uart0;
+		led-boot = &led_status_rgb;
+		led-failsafe = &led_status_rgb;
+		led-running = &led_status_rgb;
+		led-upgrade = &led_status_rgb;
 	};
 
 	chosen: chosen {
@@ -213,8 +217,6 @@
 
 	spi_nand@0 {
 		compatible = "spi-nand";
-		#address-cells = <1>;
-		#size-cells = <1>;
 		reg = <0>;
 
 		spi-max-frequency = <52000000>;

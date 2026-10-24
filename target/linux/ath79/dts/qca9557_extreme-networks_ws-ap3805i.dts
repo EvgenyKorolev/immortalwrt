@@ -138,12 +138,16 @@
 			};
 
 			partition@100000 {
-				compatible = "u-boot,env";
 				label = "cfg1";
 				reg = <0x100000 0x40000>;
 				read-only;
 
-				macaddr_uboot_ethaddr: ethaddr {
+				nvmem-layout {
+					compatible = "u-boot,env-redundant-count";
+					env-size = <0x10000>;
+
+					macaddr_uboot_ethaddr: ethaddr {
+					};
 				};
 			};
 
