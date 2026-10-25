@@ -165,7 +165,8 @@
 					led@0 {
 						reg = <0>;
 						color = <LED_COLOR_ID_GREEN>;
-						function = LED_FUNCTION_LAN;
+						function = LED_FUNCTION_ACTIVITY;
+                        function-enumerator = <1>;
 						default-state = "keep";
 					};
 
@@ -173,6 +174,7 @@
 						reg = <1>;
 						color = <LED_COLOR_ID_AMBER>;
 						function = LED_FUNCTION_LAN;
+                        function-enumerator = <2>;
 						default-state = "keep";
 					};
 				};
@@ -191,7 +193,8 @@
 					led@0 {
 						reg = <0>;
 						color = <LED_COLOR_ID_GREEN>;
-						function = LED_FUNCTION_LAN;
+						function = LED_FUNCTION_ACTIVITY;
+                        function-enumerator = <1>;
 						default-state = "keep";
 					};
 
@@ -199,6 +202,7 @@
 						reg = <1>;
 						color = <LED_COLOR_ID_AMBER>;
 						function = LED_FUNCTION_LAN;
+                        function-enumerator = <2>;
 						default-state = "keep";
 					};
 				};
@@ -217,7 +221,8 @@
 					led@0 {
 						reg = <0>;
 						color = <LED_COLOR_ID_GREEN>;
-						function = LED_FUNCTION_WAN;
+						function = LED_FUNCTION_ACTIVITY;
+                        function-enumerator = <1>;
 						default-state = "keep";
 					};
 
@@ -225,6 +230,7 @@
 						reg = <1>;
 						color = <LED_COLOR_ID_AMBER>;
 						function = LED_FUNCTION_WAN;
+                        function-enumerator = <2>;
 						default-state = "keep";
 					};
 				};
