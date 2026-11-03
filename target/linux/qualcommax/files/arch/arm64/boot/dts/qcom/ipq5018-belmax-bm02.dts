@@ -65,13 +65,6 @@
         };
     };
 
-    reserved-memory {
-        q6_mem_regions: q6_mem_regions@4b000000 {
-            no-map;
-            reg = <0x0 0x4b000000 0x0 0x3000000>;
-        };
-    };
-
     gpio-watchdog {
         compatible = "linux,wdt-gpio";
         gpios = <&tlmm 27 GPIO_ACTIVE_LOW>;
@@ -99,24 +92,7 @@
  * ===============================================================
  */
 &switch {
-	status = "okay";
-	switch_mac_mode = <MAC_MODE_SGMII_CHANNEL0>;
-
-	qcom,port_phyinfo {
-		// MAC0 -> GE Phy -> QCA8337
-		port@0 {
-			port_id = <1>;
-			mdiobus = <&mdio0>;
-			phy_address = <7>;
-		};
-
-		// MAC1 ---SGMII---> QCA8337 SerDes
-		port@1 {
-			port_id = <2>;
-			forced-speed = <1000>;
-			forced-duplex = <1>;
-		};
-	};
+	status = "disabled";
 };
 
 // MAC1 ---SGMII---> QCA8337 SerDes
@@ -132,144 +108,144 @@
 };
 
 &mdio0 {
-	status = "okay";
+    status = "disabled";
 };
 
 &mdio1 {
 	status = "okay";
+    pinctrl-0 = <&mdio1_pins>;
+    pinctrl-names = "default";
 
-	pinctrl-0 = <&mdio1_pins>;
-	pinctrl-names = "default";
-	reset-gpios = <&tlmm 39 GPIO_ACTIVE_LOW>;
+    switch1: ethernet-switch@7 {
+        compatible = "qca,qca8337";
+        reg = <0x07>;
+        #address-cells = <1>;
+        #size-cells = <0>;
 
-	switch1: ethernet-switch@17 {
-		compatible = "qca,qca8337";
-		reg = <17>;
-		#address-cells = <1>;
-		#size-cells = <0>;
+        reset-gpios = <&tlmm 39 GPIO_ACTIVE_LOW>;
+        reset-delay-us = <100000>;      /* Держать в сбросе минимум 100 мс */
+        reset-post-delay-us = <100000>; /* Ждать 100 мс после снятия сброса */
 
-		ports {
-			#address-cells = <1>;
-			#size-cells = <0>;
+        ports {
+            #address-cells = <1>;
+            #size-cells = <0>;
 
-			port@3 {
-				reg = <3>;
-				label = "lan";
-				phy-handle = <&qca8337_2>;
-				phy-mode = "internal";
+            port@3 {
+                reg = <3>;
+                label = "lan";
+                phy-mode = "internal";
 
-				leds {
-					#address-cells = <1>;
-					#size-cells = <0>;
+                leds {
+                    #address-cells = <1>;
+                    #size-cells = <0>;
 
-					led@0 {
-						reg = <0>;
-						color = <LED_COLOR_ID_GREEN>;
-						function = LED_FUNCTION_ACTIVITY;
+                    led@0 {
+                        reg = <0>;
+                        color = <LED_COLOR_ID_GREEN>;
+                        function = LED_FUNCTION_ACTIVITY;
                         function-enumerator = <1>;
-						default-state = "keep";
-					};
+                        default-state = "keep";
+                    };
 
-					led@1 {
-						reg = <1>;
-						color = <LED_COLOR_ID_AMBER>;
-						function = LED_FUNCTION_LAN;
+                    led@1 {
+                        reg = <1>;
+                        color = <LED_COLOR_ID_AMBER>;
+                        function = LED_FUNCTION_LAN;
                         function-enumerator = <2>;
-						default-state = "keep";
-					};
-				};
-			};
+                        default-state = "keep";
+                    };
+                };
+            };
 
-			port@4 {
-				reg = <4>;
-				label = "wan";
-				phy-handle = <&qca8337_3>;
-				phy-mode = "internal";
+            port@4 {
+                reg = <4>;
+                label = "wan";
+                phy-mode = "internal";
 
-				leds {
-					#address-cells = <1>;
-					#size-cells = <0>;
+                leds {
+                    #address-cells = <1>;
+                    #size-cells = <0>;
 
-					led@0 {
-						reg = <0>;
-						color = <LED_COLOR_ID_GREEN>;
-						function = LED_FUNCTION_ACTIVITY;
+                    led@0 {
+                        reg = <0>;
+                        color = <LED_COLOR_ID_GREEN>;
+                        function = LED_FUNCTION_ACTIVITY;
                         function-enumerator = <1>;
-						default-state = "keep";
-					};
+                        default-state = "keep";
+                    };
 
-					led@1 {
-						reg = <1>;
-						color = <LED_COLOR_ID_AMBER>;
-						function = LED_FUNCTION_LAN;
+                    led@1 {
+                        reg = <1>;
+                        color = <LED_COLOR_ID_AMBER>;
+                        function = LED_FUNCTION_LAN;
                         function-enumerator = <2>;
-						default-state = "keep";
-					};
-				};
-			};
+                        default-state = "keep";
+                    };
+                };
+            };
 
             port@5 {
-				reg = <5>;
-				label = "lansfp";
-				phy-handle = <&qca8337_4>;
-				phy-mode = "internal";
+                reg = <5>;
+                label = "lansfp";
+                phy-mode = "internal";
 
-				leds {
-					#address-cells = <1>;
-					#size-cells = <0>;
+                leds {
+                    #address-cells = <1>;
+                    #size-cells = <0>;
 
-					led@0 {
-						reg = <0>;
-						color = <LED_COLOR_ID_GREEN>;
-						function = LED_FUNCTION_ACTIVITY;
+                    led@0 {
+                        reg = <0>;
+                        color = <LED_COLOR_ID_GREEN>;
+                        function = LED_FUNCTION_ACTIVITY;
                         function-enumerator = <1>;
-						default-state = "keep";
-					};
+                        default-state = "keep";
+                    };
 
-					led@1 {
-						reg = <1>;
-						color = <LED_COLOR_ID_AMBER>;
-						function = LED_FUNCTION_WAN;
+                    led@1 {
+                        reg = <1>;
+                        color = <LED_COLOR_ID_AMBER>;
+                        function = LED_FUNCTION_WAN;
                         function-enumerator = <2>;
-						default-state = "keep";
-					};
-				};
-			};
+                        default-state = "keep";
+                    };
+                };
+            };
 
-			port@6 {
-				reg = <6>;
-				label = "cpu";
-				phy-mode = "sgmii";
-				ethernet = <&dp2>;
-				qca,sgmii-enable-pll;
+            port@6 {
+                reg = <6>;
+                label = "cpu";
+                phy-mode = "sgmii";
+                ethernet = <&dp2>;
+                qca,sgmii-enable-pll;
 
-				fixed-link {
-					speed = <1000>;
-					full-duplex;
-				};
-			};
-		};
+                fixed-link {
+                    speed = <1000>;
+                    full-duplex;
+                    pause;
+                };
+            };
+        };
 
-		mdio {
-			#address-cells = <1>;
-			#size-cells = <0>;
+        mdio {
+            #address-cells = <1>;
+            #size-cells = <0>;
 
-			// QCA8337 Phy2 -> LAN
-			qca8337_2: ethernet-phy@2 {
-				reg = <2>;
-			};
+            // QCA8337 Phy2 -> LAN
+            qca8337_2: ethernet-phy@2 {
+                reg = <2>;
+            };
 
-			// QCA8337 Phy3 -> WAN
-			qca8337_3: ethernet-phy@3 {
-				reg = <3>;
-			};
+            // QCA8337 Phy3 -> WAN
+            qca8337_3: ethernet-phy@3 {
+                reg = <3>;
+            };
 
             // QCA8337 Phy4 -> SFP
-			qca8337_4: ethernet-phy@4 {
-				reg = <4>;
-			};
-		};
-	};
+            qca8337_4: ethernet-phy@4 {
+                reg = <4>;
+            };
+        };
+    };
 };
 
 &sleep_clk {
@@ -522,7 +498,7 @@
 &q6v5_wcss {
     status = "okay";
 
-    memory-region = <&q6_mem_regions>;
+    memory-region = <&q6_region>;
     firmware-name = "ath11k/IPQ5018/hw1.0/q6_fw.mdt",
             "ath11k/IPQ5018/hw1.0/m3_fw.mdt",
             "ath11k/QCN6122/hw1.0/m3_fw.mdt";
