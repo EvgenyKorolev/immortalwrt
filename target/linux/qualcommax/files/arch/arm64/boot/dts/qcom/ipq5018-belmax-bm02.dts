@@ -113,7 +113,7 @@
 
 &mdio1 {
 	status = "okay";
-    pinctrl-0 = <&mdio1_pins>;
+    pinctrl-0 = <&mdio1_pins>, <&switch_reset_pin>;
     pinctrl-names = "default";
 
     switch1: ethernet-switch@7 {
@@ -493,6 +493,13 @@
         drive-strength = <8>;
         bias-disable;
     };
+
+    switch_reset_pin: switch-reset-state {
+        pins = "gpio39";
+        function = "gpio";
+        drive-strength = <8>;
+        bias-pull-up;
+    };
 };
 
 &q6v5_wcss {
@@ -550,7 +557,7 @@
     // QCN6122 5G
     q6_wcss_pd3: pd-3 {
         compatible = "qcom,ipq5018-wcss-pcie-mpd";
-        firmware-name = "ath11k/IPQ5018/hw1.0/q6_fw.mdt";
+        firmware-name = "ath11k/QCN6122/hw1.0/m3_fw.mdt";
 
         interrupts-extended =
             <&wcss_smp2p_in 24 IRQ_TYPE_NONE>,
