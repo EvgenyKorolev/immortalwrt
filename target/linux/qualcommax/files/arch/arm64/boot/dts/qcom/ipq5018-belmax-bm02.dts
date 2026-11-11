@@ -408,6 +408,10 @@
                         compatible = "mac-base";
                         reg = <0x0 0x6>;
                     };
+
+                    wifi_caldata: wifi_caldata@4c000 {
+                        reg = <0x4c000 0x2000>;
+                    };
                 };
             };
         };
@@ -516,7 +520,6 @@
 &q6v5_wcss {
     status = "okay";
 
-    memory-region = <&q6_region>;
     firmware-name = "ath11k/IPQ5018/hw1.0/q6_fw.mdt",
             "ath11k/IPQ5018/hw1.0/m3_fw.mdt",
             "ath11k/QCN6122/hw1.0/m3_fw.mdt";
@@ -598,7 +601,8 @@
     qcom,rproc = <&q6_wcss_pd1>;
     qcom,ath11k-calibration-variant = "Yuncore-AX830";
     qcom,ath11k-fw-memory-mode = <1>;
-    qcom,bdf-addr = <0x4c400000>;
+    nvmem-cells = <&wifi_caldata>;
+    nvmem-cell-names = "calibration";
 };
 
 &wifi1 {
@@ -608,6 +612,6 @@
     qcom,userpd-subsys-name = "q6v5_wcss_userpd3";
     qcom,ath11k-calibration-variant = "Yuncore-AX830";
     qcom,ath11k-fw-memory-mode = <1>;
-    qcom,bdf-addr = <0x4d100000>;
-    qcom,m3-dump-addr = <0x4df00000>;
+    nvmem-cells = <&wifi_caldata>;
+    nvmem-cell-names = "calibration";
 };
