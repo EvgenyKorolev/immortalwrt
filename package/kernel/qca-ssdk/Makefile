@@ -23,7 +23,7 @@ define KernelPackage/qca-ssdk
   TITLE:=Qualcom SSDK switch driver
   DEPENDS:=@(TARGET_qualcommax)
   FILES:=$(PKG_BUILD_DIR)/qca-ssdk.ko
-  AUTOLOAD:=$(call AutoLoad,30,qca-ssdk)
+  AUTOLOAD:=$(call AutoLoad,99,qca-ssdk)
 endef
 
 define KernelPackage/qca-ssdk/Description
