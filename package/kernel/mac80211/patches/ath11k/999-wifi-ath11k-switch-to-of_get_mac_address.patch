@@ -1,0 +1,38 @@
+From: Rosen Penev
+Subject: [PATCH ath-next] wifi: ath11k: switch to of_get_mac_address
+
+This is needed to support nvmem defined MAC addresses in DTS.
+
+In addition, check if the probe should be deferred as nvmem can load
+after ath11k.
+
+For brevity, ACPI is not a factor here. ath11k is too new for that.
+
+Signed-off-by: Rosen Penev <rosenp@gmail.com>
+---
+ drivers/net/wireless/ath/ath11k/mac.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/ath/ath11k/mac.c b/drivers/net/wireless/ath/ath11k/mac.c
+index 1fadf5faafb8..801db15ca78b 100644
+--- a/drivers/net/wireless/ath/ath11k/mac.c
++++ b/drivers/net/wireless/ath/ath11k/mac.c
+@@ -9,6 +9,7 @@
+ #include <linux/etherdevice.h>
+ #include <linux/bitfield.h>
+ #include <linux/inetdevice.h>
++#include <linux/of_net.h>
+ #include <net/if_inet6.h>
+ #include <net/ipv6.h>
+ 
+@@ -10434,7 +10435,9 @@ int ath11k_mac_register(struct ath11k_base *ab)
+ 	if (ret)
+ 		return ret;
+ 
+-	device_get_mac_address(ab->dev, mac_addr);
++	ret = of_get_mac_address(ab->dev->of_node, mac_addr);
++	if (ret == -EPROBE_DEFER)
++		return ret;
+ 
+ 	for (i = 0; i < ab->num_radios; i++) {
+ 		pdev = &ab->pdevs[i];
