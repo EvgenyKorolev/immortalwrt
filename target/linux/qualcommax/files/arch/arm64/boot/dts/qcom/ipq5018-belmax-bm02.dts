@@ -65,13 +65,6 @@
         };
     };
 
-    reserved-memory {
-        q6_mem_regions: q6_mem_regions@4b000000 {
-            no-map;
-            reg = <0x0 0x4b000000 0x0 0x3000000>;
-        };
-    };
-
     gpio-watchdog {
         compatible = "linux,wdt-gpio";
         gpios = <&tlmm 27 GPIO_ACTIVE_LOW>;
@@ -98,6 +91,7 @@
  *
  * ===============================================================
  */
+
 &switch {
 	status = "okay";
 	switch_mac_mode = <MAC_MODE_SGMII_CHANNEL0>;
@@ -122,7 +116,7 @@
 // MAC1 ---SGMII---> QCA8337 SerDes
 &dp2 {
 	status = "okay";
-    nvmem-cells = <&hw_mac_addr 1>;
+    nvmem-cells = <&hw_mac_addr 0>;
     nvmem-cell-names = "mac-address";
 
 	fixed-link {
@@ -155,6 +149,8 @@
 			port@3 {
 				reg = <3>;
 				label = "lan";
+                nvmem-cells = <&hw_mac_addr 0>;
+                nvmem-cell-names = "mac-address";
 				phy-handle = <&qca8337_2>;
 				phy-mode = "internal";
 
@@ -165,7 +161,8 @@
 					led@0 {
 						reg = <0>;
 						color = <LED_COLOR_ID_GREEN>;
-						function = LED_FUNCTION_LAN;
+						function = LED_FUNCTION_ACTIVITY;
+                        function-enumerator = <1>;
 						default-state = "keep";
 					};
 
@@ -173,6 +170,7 @@
 						reg = <1>;
 						color = <LED_COLOR_ID_AMBER>;
 						function = LED_FUNCTION_LAN;
+                        function-enumerator = <2>;
 						default-state = "keep";
 					};
 				};
@@ -181,6 +179,8 @@
 			port@4 {
 				reg = <4>;
 				label = "wan";
+                nvmem-cells = <&hw_mac_addr 1>;
+                nvmem-cell-names = "mac-address";
 				phy-handle = <&qca8337_3>;
 				phy-mode = "internal";
 
@@ -191,7 +191,8 @@
 					led@0 {
 						reg = <0>;
 						color = <LED_COLOR_ID_GREEN>;
-						function = LED_FUNCTION_LAN;
+						function = LED_FUNCTION_ACTIVITY;
+                        function-enumerator = <1>;
 						default-state = "keep";
 					};
 
@@ -199,6 +200,7 @@
 						reg = <1>;
 						color = <LED_COLOR_ID_AMBER>;
 						function = LED_FUNCTION_LAN;
+                        function-enumerator = <2>;
 						default-state = "keep";
 					};
 				};
@@ -217,7 +219,8 @@
 					led@0 {
 						reg = <0>;
 						color = <LED_COLOR_ID_GREEN>;
-						function = LED_FUNCTION_WAN;
+						function = LED_FUNCTION_ACTIVITY;
+                        function-enumerator = <1>;
 						default-state = "keep";
 					};
 
@@ -225,6 +228,7 @@
 						reg = <1>;
 						color = <LED_COLOR_ID_AMBER>;
 						function = LED_FUNCTION_WAN;
+                        function-enumerator = <2>;
 						default-state = "keep";
 					};
 				};
@@ -408,6 +412,10 @@
                         compatible = "mac-base";
                         reg = <0x0 0x6>;
                     };
+
+                    //wifi_caldata: wifi_caldata@4c000 {
+                    //    reg = <0x4c000 0x2000>;
+                    //};
                 };
             };
         };
@@ -516,7 +524,6 @@
 &q6v5_wcss {
     status = "okay";
 
-    memory-region = <&q6_mem_regions>;
     firmware-name = "ath11k/IPQ5018/hw1.0/q6_fw.mdt",
             "ath11k/IPQ5018/hw1.0/m3_fw.mdt",
             "ath11k/QCN6122/hw1.0/m3_fw.mdt";
