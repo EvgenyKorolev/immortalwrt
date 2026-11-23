@@ -13,46 +13,71 @@ msgstr ""
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "X-Generator: Weblate 5.4-dev\n"
 
-#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:14
-msgid "Simple device setup"
-msgstr "Простая настройка устройства"
-
-#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:16
-msgid "Common params"
-msgstr "Общие параметры"
-
-#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:19
-msgid "Hostname"
-msgstr "Имя хоста"
-
-#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:38
-msgid "Mesh params"
-msgstr "Параметры сети Mesh"
-
-#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:41
-msgid "Mesh SSID"
-msgstr "Mesh SSID"
-
-#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:45
-msgid "Mesh passwd"
-msgstr "Пароль Mesh сети"
-
-#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:52
-msgid "Setup mesh"
-msgstr "Настроить Mesh"
-
-#: applications/luci-app-belmax/htdocs/luci-static/resources/view/belmax/belmax.js:55
-msgid "Setting up mesh ..."
-msgstr "Настройка Mesh..."
-
-#: applications/luci-app-belmax/root/usr/share/luci/menu.d/luci-app-belmax.json:3
+#: root/usr/share/luci/menu.d/luci-app-belmax.json:3
 msgid "BelMax"
 msgstr "BelMax"
 
-#: applications/luci-app-belmax/root/usr/share/luci/menu.d/luci-app-belmax.json:14
+#: htdocs/luci-static/resources/view/belmax/block.js:13
+msgid "Block mesh nodes"
+msgstr "Блокировка узлов меш-сети"
+
+#: root/usr/share/luci/menu.d/luci-app-belmax.json:21
+msgid "Block nodes"
+msgstr "Блокировка узлов"
+
+#: htdocs/luci-static/resources/view/belmax/block.js:18
+msgid "Blocked nodes list"
+msgstr "Список заблокированных узлов"
+
+#: htdocs/luci-static/resources/view/belmax/belmax.js:13
+msgid "Common params"
+msgstr "Общие параметры"
+
+#: htdocs/luci-static/resources/view/belmax/block.js:19
+msgid "Enter node MAC address"
+msgstr "Введите MAC-адрес узла"
+
+#: root/usr/share/rpcd/acl.d/luci-app-belmax.json:3
+msgid "Grant UCI and RPC access to LuCI BelMax"
+msgstr "Предоставить доступ UCI и RPC приложению LuCI BelMax"
+
+#: htdocs/luci-static/resources/view/belmax/belmax.js:16
+msgid "Hostname"
+msgstr "Имя хоста"
+
+#: htdocs/luci-static/resources/view/belmax/belmax.js:38
+msgid "Mesh SSID"
+msgstr "Mesh SSID"
+
+#: htdocs/luci-static/resources/view/belmax/belmax.js:35
+msgid "Mesh params"
+msgstr "Параметры сети Mesh"
+
+#: htdocs/luci-static/resources/view/belmax/belmax.js:42
+msgid "Mesh passwd"
+msgstr "Пароль Mesh сети"
+
+#: htdocs/luci-static/resources/view/belmax/belmax.js:52
+msgid "Setting up mesh ..."
+msgstr "Настройка Mesh..."
+
+#: root/usr/share/luci/menu.d/luci-app-belmax.json:13
 msgid "Setup"
 msgstr "Настройка"
 
-#: applications/luci-app-belmax/root/usr/share/rpcd/acl.d/luci-app-belmax.json:3
-msgid "Grant UCI and RPC access to LuCI BelMax"
-msgstr "Предоставить доступ UCI и RPC приложению LuCI BelMax"
+#: htdocs/luci-static/resources/view/belmax/belmax.js:49
+#: htdocs/luci-static/resources/view/belmax/belmax.js:67
+msgid "Setup mesh"
+msgstr "Настроить Mesh"
+
+#: htdocs/luci-static/resources/view/belmax/belmax.js:11
+msgid "Simple device setup"
+msgstr "Простая настройка устройства"
+
+#: htdocs/luci-static/resources/view/belmax/block.js:33
+msgid "block-node apply failed:"
+msgstr "ошибка команды применения блокировок:"
+
+#: htdocs/luci-static/resources/view/belmax/block.js:36
+msgid "block-node apply ok:"
+msgstr "блокировки узлов применены:"

@@ -1,0 +1,100 @@
+#!/bin/sh
+
+IFACE="phy1-mesh0"
+UCIVAR="belmax.mesh.block_nodes"
+
+usage()
+{
+    set +x
+    app=$(basename $0)
+    echo "block-node: block, unblock mesh nodes"
+    echo "usage"
+    echo "  $app [show]        - show blocked nodes"
+    echo "  $app (-h|help)     - show usage"
+    echo "  $app block   <MAC> - block node <MAC>"
+    echo "  $app unblock <MAC> - unblock node <MAC>"
+    echo "  $app apply         - apply blocking nodes from conf"
+    echo "  $app clear         - unblock all nodes"
+    echo "  $app stat          - show connected nodes"
+    exit 0
+}
+
+check_mac_arg()
+{
+    [[ -z "$1" ]] && usage
+    MAC=$(echo $1 | tr 'ABCDEF' 'abcdef')
+}
+
+is_blocked()
+{
+    uci get $UCIVAR | grep -qw "$1"
+}
+
+block()
+{
+    echo "block node $MAC"
+    iw dev $IFACE station set $MAC plink_action block
+}
+
+unblock()
+{
+    echo "unblock node $MAC"
+    iw dev $IFACE station del $MAC 
+    [ -z "$2" ] &&  wifi
+}
+
+list_nodes()
+{
+    uci get $UCIVAR | tr ' ' '\n'
+}
+
+CMD="$1"
+[[ -z "$1" ]] && CMD="show"
+
+case "$CMD" in
+-h|help)
+    usage 
+    ;;
+show)
+    list_nodes
+    ;;
+block)
+    check_mac_arg $2
+
+    uci del_list $UCIVAR=$MAC
+    uci add_list $UCIVAR=$MAC
+    uci commit
+
+    block $MAC
+    ;;
+unblock)
+    check_mac_arg $2
+    
+    uci del_list $UCIVAR=$MAC
+    uci commit
+    
+    unblock $MAC
+    ;;
+apply)
+    wifi
+    ;;
+clear)
+    list_nodes | while read MAC; do 
+        uci del_list $UCIVAR=$MAC
+        unblock $MAC 0
+    done
+    wifi
+    uci commit
+    ;;
+stat)
+    iw dev $IFACE station dump | grep -E "Station|plink|signal|bitrate"
+    ;;
+*)
+    # run as wpa_cli event handler
+    if [ "$2" == "MESH-PEER-CONNECTED" ]; then
+        IFACE="$1"
+        MAC="$3"
+        is_blocked "$MAC" && block $MAC
+    fi
+    ;;
+esac
