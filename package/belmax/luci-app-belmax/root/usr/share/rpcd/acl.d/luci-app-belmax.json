@@ -11,7 +11,8 @@
         "write": {
             "file": {
                 "/usr/bin/setup-mesh-main": [ "exec" ],
-                "/usr/bin/setup-mesh-node": [ "exec" ]
+                "/usr/bin/setup-mesh-node": [ "exec" ],
+                "/usr/bin/block-node": [ "exec" ]
             },
             "ubus": {
                 "luci.belmax": [ ],
