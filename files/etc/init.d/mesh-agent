@@ -7,10 +7,18 @@ STOP=10
 USE_PROCD=1
 
 start_service() {
+    INTERVAL=$(uci get belmax.mesh_monitor.interval 2>/dev/null)
+    INTERVAL=${INTERVAL:-30}
+    
     procd_open_instance
     procd_set_param command /usr/libexec/mesh-agent.sh
-    procd_set_param respawn 3600 5 0
+    procd_set_param respawn ${INTERVAL} ${INTERVAL} 0
     procd_set_param stdout 1
     procd_set_param stderr 1
     procd_close_instance
+}
+
+reload_service() {
+    stop
+    start
 }

@@ -69,6 +69,32 @@ return view.extend({
 				});
 		};
 
+		var sectmon = m.section(form.TypedSection, 'mesh_monitor', _('Mesh Monitor Agent'));
+		sectmon.anonymous = false;
+		sectmon.addremove = false;
+
+		var optenabled = sectmon.option(form.Flag, 'enabled', _('Enable Agent'), _('Автоматически запускать агент мониторинга'));
+		optenabled.rmempty = false;
+		optenabled.default = '1';
+
+		var opturl = sectmon.option(form.Value, 'collector_url', _('Collector URL'), _('Полный URL коллектора (включая http://)'));
+		opturl.datatype = 'string';
+		opturl.placeholder = 'http://192.168.1.181:8080/api/mesh-data';
+		opturl.rmempty = false;
+
+		var optinterval = sectmon.option(form.Value, 'interval', _('Interval (sec)'), _('Интервал отправки данных в секундах'));
+		optinterval.datatype = 'and(uinteger, min(5), max(3600))';
+		optinterval.placeholder = '30';
+		optinterval.rmempty = false;
+
+		m.applyOnSave = true;
+
 		return m.render();
 	},
+
+	handleSaveApply: function(ev, map) {
+		return this.handleSave(ev, map).then(function() {
+			return fs.exec('/etc/init.d/mesh-monitor', ['restart']).catch(function(){});
+		});
+	}
 });
