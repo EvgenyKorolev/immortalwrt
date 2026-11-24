@@ -16,6 +16,20 @@ config mesh_monitor 'mesh_monitor'
     option collector_url 'http://192.168.1.181:8080/api/mesh-data'
     option enabled '1'
     option interval '30'
+
+config mesh_collector 'mesh_collector'
+    option enabled '0'
+    option port '8080'
+    option stale_after '90'
 EOF
+
+# миграция для устройств, где /etc/config/belmax уже существовал
+if ! uci -q get belmax.mesh_collector > /dev/null; then
+    uci set belmax.mesh_collector=mesh_collector
+    uci set belmax.mesh_collector.enabled='0'
+    uci set belmax.mesh_collector.port='8080'
+    uci set belmax.mesh_collector.stale_after='90'
+    uci commit belmax
+fi
 
 return 0

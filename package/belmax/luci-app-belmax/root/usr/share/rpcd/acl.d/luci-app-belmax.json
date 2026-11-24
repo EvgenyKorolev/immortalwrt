@@ -6,13 +6,18 @@
                 "luci.belmax": [ ],
                 "file": [ "exec" ]
             },
+            "file": {
+                "/etc/init.d/mesh-collector status": [ "exec" ]
+            },
             "uci": [ "belmax" ]
         },
         "write": {
             "file": {
                 "/usr/bin/setup-mesh-main": [ "exec" ],
                 "/usr/bin/setup-mesh-node": [ "exec" ],
-                "/usr/bin/block-node": [ "exec" ]
+                "/usr/bin/block-node": [ "exec" ],
+                "/etc/init.d/mesh-collector restart": [ "exec" ],
+                "/etc/init.d/mesh-monitor restart": [ "exec" ]
             },
             "ubus": {
                 "luci.belmax": [ ],

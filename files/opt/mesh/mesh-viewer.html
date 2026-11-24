@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>BelMax Топология мэш</title>
+<style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 16px 20px; background: #1a1a2e; color: #eee; }
+    h1 { text-align: center; color: #4fc3f7; font-size: 22px; margin: 4px 0 12px; }
+    #cy { width: 100%; height: 620px; background: #16213e; border-radius: 8px; margin: 10px 0; }
+    .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; }
+    .status { flex: 1 1 320px; text-align: center; padding: 8px 10px; background: #0f3460; border-radius: 5px; font-size: 13px; }
+    button { background: #0f3460; color: #cfe8ff; border: 1px solid #29b6f6; border-radius: 5px;
+             padding: 7px 12px; cursor: pointer; font-size: 13px; }
+    button:hover { background: #14497f; }
+    .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; margin: 10px 0; font-size: 12px; color: #b9c6d6; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-color { width: 22px; height: 3px; border-radius: 2px; }
+    .legend-dash { width: 22px; height: 0; border-top: 3px dashed #9fb3c8; }
+    .node-info { position: fixed; bottom: 16px; right: 16px; background: #0f3460; border: 1px solid #29b6f6;
+                 padding: 12px 14px; border-radius: 8px; max-width: 340px; font-size: 12px; display: none; }
+    .node-info h3 { margin: 0 0 6px; color: #4fc3f7; font-size: 15px; }
+    .node-info table { border-collapse: collapse; width: 100%; }
+    .node-info td { padding: 2px 4px; border-top: 1px solid #1c4f86; }
+    .node-info .close { float: right; cursor: pointer; color: #9fb3c8; }
+</style>
+</head>
+<body>
+<h1>🕸️ BelMax Топология мэш</h1>
+
+<div class="bar">
+    <div class="status" id="status">Загрузка данных...</div>
+    <button id="btnPause">⏸ Пауза</button>
+    <button id="btnFit">⤢ Вписать</button>
+    <button id="btnLayout">↻ Разложить заново</button>
+</div>
+
+<div class="legend">
+    <div class="legend-item"><div class="legend-color" style="background:#4caf50"></div><span>Хороший (&gt;100 Mbps)</span></div>
+    <div class="legend-item"><div class="legend-color" style="background:#ff9800"></div><span>Средний (10–100 Mbps)</span></div>
+    <div class="legend-item"><div class="legend-color" style="background:#f44336"></div><span>Плохой (&lt;10 Mbps)</span></div>
+    <div class="legend-item"><div class="legend-color" style="background:#9fb3c8"></div><span>5G — сплошная</span></div>
+    <div class="legend-item"><div class="legend-dash"></div><span>2.4G — пунктир</span></div>
+    <div class="legend-item"><span>→ направление передачи (метрики источника)</span></div>
+</div>
+
+<div id="cy"></div>
+<div class="node-info" id="nodeInfo"></div>
+
+<script>
+(function () {
+    'use strict';
+
+    var API        = window.location.origin + '/api/graph';
+    var REFRESH_MS = 5000;
+    var NODE_SIZE  = 26;     
+    var LINK_DIST  = 150;
+    var POS_KEY    = 'belmax.mesh.positions.v1';
+
+    var cy = null, structSig = null, busy = false, paused = false, timer = null;
+    var placed = Object.create(null);   // id -> true, если у узла уже есть осмысленная позиция
+
+    function $(id) { return document.getElementById(id); }
+    function esc(s) {
+        return String(s === undefined || s === null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function num(v) { var n = Number(v); return isFinite(n) ? n : 0; }
+    function linkColor(v) { return v > 100 ? '#4caf50' : (v > 10 ? '#ff9800' : '#f44336'); }
+    function linkWidth(v) { return v > 100 ? 3.5 : (v > 10 ? 2.5 : 1.5); }
+    function tpOf(e) { return num(e.data('throughput')); }
+    function hash(s) { var h = 0, i; for (i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; } return Math.abs(h); }
+
+    /* ---------- загрузка Cytoscape: сначала локальный файл, потом CDN ---------- */
+    function loadCytoscape() {
+        var srcs = ['cytoscape.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js'];
+        return new Promise(function (resolve, reject) {
+            var i = 0;
+            function next() {
+                if (window.cytoscape) { resolve(); return; }
+                if (i >= srcs.length) {
+                    reject(new Error('не найден cytoscape.min.js (положите файл рядом с mesh-viewer.html)'));
+                    return;
+                }
+                var s = document.createElement('script');
+                s.src = srcs[i++];
+                s.onload = function () { if (window.cytoscape) { resolve(); } else { next(); } };
+                s.onerror = next;
+                document.head.appendChild(s);
+            }
+            next();
+        });
+    }
+
+    /* ---------- стили: фиксированный размер узлов, направленные bezier-рёбра ---------- */
+    var STYLE = [
+        { selector: 'node', style: {
+            'width': NODE_SIZE, 'height': NODE_SIZE,
+            'background-color': '#4fc3f7', 'border-width': 2, 'border-color': '#29b6f6',
+            'label': 'data(label)', 'font-size': 11, 'color': '#e8f4ff',
+            'text-valign': 'bottom', 'text-halign': 'center', 'text-margin-y': 5,
+            'text-outline-width': 2, 'text-outline-color': '#16213e',
+            'min-zoomed-font-size': 7
+        }},
+        { selector: 'node[?unknown]', style: {
+            'background-color': '#6b7280', 'border-color': '#9ca3af', 'border-style': 'dashed'
+        }},
+        { selector: 'node[?stale]', style: { 'opacity': 0.4 }},
+        { selector: 'node:selected', style: { 'background-color': '#ff5722', 'border-color': '#ff7043' }},
+        { selector: 'edge', style: {
+            'curve-style': 'bezier',            // встречные рёбра расходятся дугами
+            'target-arrow-shape': 'triangle', 'arrow-scale': 0.7,
+            'width':              function (e) { return linkWidth(tpOf(e)); },
+            'line-color':         function (e) { return linkColor(tpOf(e)); },
+            'target-arrow-color': function (e) { return linkColor(tpOf(e)); },
+            'label': function (e) {
+                return e.data('band') + ' ' + tpOf(e).toFixed(0) + ' Mbps\n' +
+                       num(e.data('signal')) + ' dBm';
+            },
+            'font-size': 9, 'color': '#cbd5e1',
+            'text-wrap': 'wrap', 'text-max-width': 90,
+            'text-rotation': 'autorotate',
+            'source-text-offset': 60,           // метка у своего конца -> 4 линии не мешают друг другу
+            'text-background-color': '#16213e', 'text-background-opacity': 0.75, 'text-background-padding': 2,
+            'min-zoomed-font-size': 7
+        }},
+        { selector: 'edge[band="2.4G"]', style: { 'line-style': 'dashed', 'line-dash-pattern': [6, 4] }},
+        { selector: 'edge[?stale]', style: { 'opacity': 0.3 }}
+    ];
+
+    /* ---------- память раскладки: картинка не «прыгает» даже после F5 ---------- */
+    function readPositions() {
+        try { return JSON.parse(localStorage.getItem(POS_KEY) || '{}') || {}; } catch (e) { return {}; }
+    }
+    function savePositions() {
+        if (!cy) { return; }
+        try {
+            var out = {};
+            cy.nodes().forEach(function (n) { out[n.id()] = n.position(); });
+            localStorage.setItem(POS_KEY, JSON.stringify(out));
+        } catch (e) { /* приватный режим — просто не сохраняем */ }
+    }
+
+    /* ---------- новый узел ставим рядом с уже стоящим соседом; старые НЕ трогаем ---------- */
+    function placeNew(id, edges) {
+        var taken = [], anchor = null, i;
+        cy.nodes().forEach(function (n) {
+            var p = n.position();
+            if (placed[n.id()] && isFinite(p.x) && isFinite(p.y)) { taken.push(p); }
+        });
+        for (i = 0; i < edges.length; i++) {
+            var d = edges[i].data, other = null;
+            if (d.source === id) { other = d.target; } else if (d.target === id) { other = d.source; }
+            if (!other) { continue; }
+            var el = cy.getElementById(other);
+            if (el.nonempty() && placed[other]) { anchor = el.position(); break; }
+        }
+        var base = anchor || { x: 0, y: 0 }, start = hash(id) % 360, k;
+        for (k = 0; k < 24; k++) {
+            var a = (start + k * 15) * Math.PI / 180;
+            var p = { x: base.x + LINK_DIST * Math.cos(a), y: base.y + LINK_DIST * Math.sin(a) };
+            var free = taken.every(function (q) {
+                return (q.x - p.x) * (q.x - p.x) + (q.y - p.y) * (q.y - p.y) > (NODE_SIZE * 3) * (NODE_SIZE * 3);
+            });
+            if (free) { return p; }
+        }
+        return { x: base.x + LINK_DIST, y: base.y + LINK_DIST };
+    }
+
+    function signature(nodes, edges) {
+        var n = nodes.map(function (x) { return x.data.id; }).sort();
+        var e = edges.map(function (x) { return x.data.id; }).sort();
+        return JSON.stringify([n, e]);
+    }
+
+    function runLayout(animate) {
+        var l = cy.layout({
+            name: 'cose', animate: animate, animationDuration: 400, randomize: true,
+            nodeRepulsion: 9000, idealEdgeLength: LINK_DIST, gravity: 0.35, numIter: 800,
+            fit: true, padding: 40
+        });
+        l.one('layoutstop', function () {
+            cy.nodes().forEach(function (n) { placed[n.id()] = true; });
+            savePositions();
+        });
+        l.run();
+    }
+
+    function createCy(g) {
+        var saved = readPositions(), els = [], missing = [];
+        g.elements.nodes.forEach(function (n) {
+            var p = saved[n.data.id];
+            if (p) { placed[n.data.id] = true; } else { missing.push(n.data.id); }
+            els.push({ group: 'nodes', data: n.data, position: p ? { x: p.x, y: p.y } : { x: 0, y: 0 } });
+        });
+        g.elements.edges.forEach(function (e) { els.push({ group: 'edges', data: e.data }); });
+
+        cy = cytoscape({
+            container: $('cy'), elements: els, style: STYLE,
+            wheelSensitivity: 0.2, minZoom: 0.2, maxZoom: 3,
+            layout: { name: 'preset', fit: false }     // никакой авто-раскладки при создании
+        });
+
+        if (missing.length === 0) {
+            cy.fit(undefined, 40);                     // всё восстановлено из памяти — вид тот же
+        } else if (missing.length < g.elements.nodes.length) {
+            missing.forEach(function (id) {            // достраиваем только новичков
+                cy.getElementById(id).position(placeNew(id, g.elements.edges));
+                placed[id] = true;
+            });
+            cy.fit(undefined, 40);
+            savePositions();
+        } else {
+            runLayout(false);                          // самый первый запуск — одна раскладка
+        }
+
+        structSig = signature(g.elements.nodes, g.elements.edges);
+
+        cy.on('dragfree', 'node', savePositions);
+        cy.on('tap', 'node', function (evt) { showInfo(evt.target); });
+        cy.on('tap', function (evt) { if (evt.target === cy) { $('nodeInfo').style.display = 'none'; } });
+    }
+
+    /* ---------- главное: диф-обновление вместо remove() + layout() ---------- */
+    function applyGraph(g) {
+        var nodes = g.elements.nodes || [], edges = g.elements.edges || [];
+        var nMap = Object.create(null), eMap = Object.create(null);
+        nodes.forEach(function (n) { nMap[n.data.id] = n; });
+        edges.forEach(function (e) { eMap[e.data.id] = e; });
+
+        var sig = signature(nodes, edges);
+        var changed = (sig !== structSig);
+
+        cy.batch(function () {
+            var gone = cy.elements().filter(function (el) {
+                return el.isNode() ? !nMap[el.id()] : !eMap[el.id()];
+            });
+            if (gone.length) {
+                gone.forEach(function (el) { delete placed[el.id()]; });
+                gone.remove();
+            }
+
+            nodes.forEach(function (n) {
+                var ex = cy.getElementById(n.data.id);
+                if (ex.nonempty()) {
+                    var d = Object.assign({}, n.data); delete d.id;
+                    ex.data(d);                        // только цифры; позиция не трогается
+                } else {
+                    cy.add({ group: 'nodes', data: n.data, position: placeNew(n.data.id, edges) });
+                    placed[n.data.id] = true;
+                }
+            });
+
+            edges.forEach(function (e) {
+                if (cy.getElementById(e.data.source).empty() || cy.getElementById(e.data.target).empty()) { return; }
+                var ex = cy.getElementById(e.data.id);
+                if (ex.nonempty()) {
+                    var d = Object.assign({}, e.data); delete d.id; delete d.source; delete d.target;
+                    ex.data(d);
+                } else {
+                    cy.add({ group: 'edges', data: e.data });
+                }
+            });
+        });
+
+        structSig = sig;
+        if (changed) { savePositions(); }              // раскладку НЕ пересчитываем
+        return changed;
+    }
+
+    function showInfo(node) {
+        var rows = '';
+        node.connectedEdges().forEach(function (e) {
+            var d = e.data();
+            var dir = (d.source === node.id()) ? '→ ' + d.target : '← ' + d.source;
+            rows += '<tr><td>' + esc(dir) + '</td><td>' + esc(d.band) + '</td><td>' +
+                    tpOf(e).toFixed(1) + ' Mbps</td><td>' + num(d.signal) + ' dBm</td><td>m' +
+                    num(d.metric) + '</td></tr>';
+        });
+        $('nodeInfo').innerHTML =
+            '<span class="close" onclick="this.parentNode.style.display=\'none\'">✕</span>' +
+            '<h3>' + esc(node.data('label')) + '</h3>' +
+            (node.data('mac') ? '<div>MAC: ' + esc(node.data('mac')) + '</div>' : '') +
+            '<div>Интерфейсы: ' + esc((node.data('ifaces') || []).join(', ') || '—') + '</div>' +
+            '<div>Данные: ' + num(node.data('age')) + ' с назад' +
+            (node.data('stale') ? ' ⚠ устарели' : '') + '</div>' +
+            '<table>' + rows + '</table>';
+        $('nodeInfo').style.display = 'block';
+    }
+
+    function setStatus(text, ok) {
+        var el = $('status');
+        el.innerHTML = text;
+        el.style.background = ok ? '#0f3460' : '#5b1f24';
+    }
+
+    async function refresh() {
+        if (busy) { return; }
+        busy = true;
+        try {
+            var r = await fetch(API, { cache: 'no-store' });
+            if (!r.ok) { throw new Error('HTTP ' + r.status); }
+            var g = await r.json();
+            var changed;
+            if (!cy) { createCy(g); changed = true; } else { changed = applyGraph(g); }
+
+            var stale = g.elements.nodes.filter(function (n) { return n.data.stale; }).length;
+            setStatus('✅ ' + new Date().toLocaleTimeString() +
+                      ' · узлов: ' + g.elements.nodes.length +
+                      ' · линков: ' + g.elements.edges.length +
+                      (stale ? ' · ⚠ молчат: ' + stale : '') +
+                      (changed ? ' · топология изменилась' : ' · без изменений'), true);
+        } catch (e) {
+            setStatus('❌ ' + esc(e.message), false);
+        } finally {
+            busy = false;
+        }
+    }
+
+    function schedule() {
+        clearTimeout(timer);
+        timer = setTimeout(async function () { if (!paused) { await refresh(); } schedule(); }, REFRESH_MS);
+    }
+
+    /* ---------- UI ---------- */
+    $('btnPause').onclick = function () {
+        paused = !paused;
+        this.textContent = paused ? '▶ Продолжить' : '⏸ Пауза';
+    };
+    $('btnFit').onclick = function () { if (cy) { cy.fit(undefined, 40); } };
+    $('btnLayout').onclick = function () { if (cy) { runLayout(true); } };
+
+    var rz;
+    window.addEventListener('resize', function () {
+        clearTimeout(rz);
+        rz = setTimeout(function () { if (cy) { cy.resize(); } }, 150);   // без fit — вид не меняется
+    });
+
+    loadCytoscape()
+        .then(function () { return refresh(); })
+        .then(schedule)
+        .catch(function (e) { setStatus('❌ ' + esc(e.message), false); });
+})();
+</script>
+</body>
+</html>

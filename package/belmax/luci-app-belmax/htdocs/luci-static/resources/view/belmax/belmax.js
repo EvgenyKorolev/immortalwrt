@@ -87,6 +87,47 @@ return view.extend({
 		optinterval.placeholder = '30';
 		optinterval.rmempty = false;
 
+		/* ---- Коллектор: включать РОВНО на одной ноде сети ---- */
+		var sectcol = m.section(form.TypedSection, 'mesh_collector', _('Mesh Collector'),
+			_('Сервер визуализации топологии. Включайте только на ОДНОМ устройстве сети, обычно на шлюзе. Остальные ноды должны слать данные на него.'));
+		sectcol.anonymous = false;
+		sectcol.addremove = false;
+
+		var optcolen = sectcol.option(form.Flag, 'enabled', _('Enable Collector'), _('Запускать коллектор на этом устройстве'));
+		optcolen.rmempty = false;
+		optcolen.default = '0';
+
+		var optcolport = sectcol.option(form.Value, 'port', _('Listen port'), _('TCP-порт веб-интерфейса и API'));
+		optcolport.datatype = 'port';
+		optcolport.placeholder = '8080';
+		optcolport.rmempty = false;
+		optcolport.depends('enabled', '1');
+
+		var optcolstale = sectcol.option(form.Value, 'stale_after', _('Stale after (sec)'), _('Через сколько секунд без данных считать ноду неактивной'));
+		optcolstale.datatype = 'and(uinteger, min(10), max(3600))';
+		optcolstale.placeholder = '90';
+		optcolstale.rmempty = false;
+		optcolstale.depends('enabled', '1');
+
+		var optcolstate = sectcol.option(form.DummyValue, '_state', _('Service state'));
+		optcolstate.load = function() {
+			return fs.exec('/etc/init.d/mesh-collector', [ 'status' ])
+				.then(function(res) {
+					var out = ((res.stdout || '') + (res.stderr || '')).trim();
+					return out || 'stopped';
+				})
+				.catch(function() { return 'stopped'; });
+		};
+
+		var optcolurl = sectcol.option(form.DummyValue, '_webui', _('Web UI'));
+		optcolurl.rawhtml = true;
+		optcolurl.depends('enabled', '1');
+		optcolurl.cfgvalue = function(section_id) {
+			var port = this.map.data.get('belmax', section_id, 'port') || '8080';
+			var url = 'http://' + window.location.hostname + ':' + port + '/';
+			return '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>';
+		};
+
 		m.applyOnSave = true;
 
 		return m.render();
