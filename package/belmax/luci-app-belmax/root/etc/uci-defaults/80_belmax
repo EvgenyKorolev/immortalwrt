@@ -1,6 +1,9 @@
 #!/bin/sh
+# Выполняется один раз при первой загрузке новой прошивки
 
-cat > /etc/config/belmax << EOF
+# --- базовый конфиг: только если файла ещё нет ---
+if [ ! -s /etc/config/belmax ]; then
+    cat > /etc/config/belmax << 'EOF'
 config common 'common'
     option hostname 'BelMax'
     option ap_ssid 'BelMax'
@@ -11,11 +14,55 @@ config mesh 'mesh'
     option mesh_key '12345678'
 
 config ptp 'ptp'
-
-config mesh_monitor 'mesh_monitor'
-    option collector_url 'http://192.168.1.181:8080/api/mesh-data'
-    option enabled '1'
-    option interval '30'
 EOF
+fi
+
+# --- секция агента ---
+if ! uci -q get belmax.mesh_monitor >/dev/null; then
+    uci set belmax.mesh_monitor=mesh_monitor
+    uci set belmax.mesh_monitor.collector_url='http://192.168.1.181:8080/api/mesh-data'
+    uci set belmax.mesh_monitor.enabled='1'
+    uci set belmax.mesh_monitor.interval='30'
+fi
+
+# --- секция коллектора ---
+if ! uci -q get belmax.mesh_collector >/dev/null; then
+    uci set belmax.mesh_collector=mesh_collector
+    uci set belmax.mesh_collector.enabled='0'
+    uci set belmax.mesh_collector.port='8080'
+    uci set belmax.mesh_collector.stale_after='90'
+fi
+uci commit belmax
+
+# --- инстанс uhttpd для коллектора ---
+PORT=$(uci -q get belmax.mesh_collector.port); PORT=${PORT:-8080}
+
+uci -q delete uhttpd.mesh
+uci set uhttpd.mesh=uhttpd
+uci add_list uhttpd.mesh.listen_http="0.0.0.0:$PORT"
+uci set uhttpd.mesh.home='/www/mesh'
+uci set uhttpd.mesh.cgi_prefix='/api'
+uci add_list uhttpd.mesh.index_page='mesh-viewer.html'
+uci set uhttpd.mesh.no_dirlists='1'
+uci set uhttpd.mesh.max_requests='10'
+uci set uhttpd.mesh.max_connections='32'
+uci set uhttpd.mesh.script_timeout='30'
+uci commit uhttpd
+
+# --- закрыть порт со стороны WAN ---
+uci -q set firewall.mesh_collector_wan_deny=rule
+uci set firewall.mesh_collector_wan_deny.name='Deny mesh-collector from WAN'
+uci set firewall.mesh_collector_wan_deny.src='wan'
+uci set firewall.mesh_collector_wan_deny.proto='tcp'
+uci set firewall.mesh_collector_wan_deny.dest_port="$PORT"
+uci set firewall.mesh_collector_wan_deny.target='DROP'
+uci set firewall.mesh_collector_wan_deny.enabled='1'
+uci commit firewall
+
+# --- автозапуск ---
+[ -x /etc/init.d/mesh-monitor ]   && /etc/init.d/mesh-monitor enable
+[ -x /etc/init.d/mesh-collector ] && /etc/init.d/mesh-collector enable
+
+mkdir -p /tmp/mesh-data
 
 return 0

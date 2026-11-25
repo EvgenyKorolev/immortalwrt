@@ -1,0 +1,52 @@
+#!/bin/sh /etc/rc.common
+# Коллектор = инстанс uhttpd "mesh"
+
+START=45          # раньше чем uhttpd (START=50)
+EXTRA_COMMANDS="status apply"
+
+_sync() {
+	local port
+	port=$(uci -q get belmax.mesh_collector.port); port=${port:-8080}
+
+	uci -q set uhttpd.mesh=uhttpd
+	uci -q delete uhttpd.mesh.listen_http
+	uci add_list uhttpd.mesh.listen_http="0.0.0.0:$port"
+	uci set uhttpd.mesh.home='/www/mesh'
+	uci set uhttpd.mesh.cgi_prefix='/api'
+	uci -q delete uhttpd.mesh.index_page
+	uci add_list uhttpd.mesh.index_page='mesh-viewer.html'
+	uci set uhttpd.mesh.no_dirlists='1'
+	uci set uhttpd.mesh.max_requests='10'
+	uci set uhttpd.mesh.max_connections='32'
+	uci set uhttpd.mesh.script_timeout='30'
+	uci commit uhttpd
+}
+
+start() {
+	local port cur
+	port=$(uci -q get belmax.mesh_collector.port); port=${port:-8080}
+	cur=$(uci -q get uhttpd.mesh.listen_http)
+	# только правим конфиг; uhttpd ещё не запущен и подхватит его сам
+	[ "$cur" = "0.0.0.0:$port" ] || _sync
+}
+
+stop() { :; }
+
+apply() {          # только вручную из SSH
+	_sync
+	/etc/init.d/uhttpd restart
+}
+
+status() {
+	local en port
+	en=$(uci -q get belmax.mesh_collector.enabled)
+	port=$(uci -q get belmax.mesh_collector.port); port=${port:-8080}
+
+	if [ "$en" != "1" ]; then
+		echo "disabled"
+	elif netstat -ltn 2>/dev/null | grep -q ":$port "; then
+		echo "running (port $port)"
+	else
+		echo "enabled, not listening"
+	fi
+}

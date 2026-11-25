@@ -1,0 +1,158 @@
+#!/usr/bin/ucode
+
+'use strict';
+
+const fs = require('fs');
+
+const DATA_DIR = getenv('MESH_DATA_DIR') || '/tmp/mesh-data';
+
+function uci_get(sec, opt) {
+	try {
+		let c = require('uci').cursor();
+		return c.get('belmax', sec, opt);
+	}
+	catch (e) { return null; }
+}
+
+function stale_after() {
+	let v = int(uci_get('mesh_collector', 'stale_after'));
+	return (v >= 10 && v <= 3600) ? v : 90;
+}
+
+function iso(ts) {
+	let t = localtime(ts);
+	return t ? sprintf('%04d-%02d-%02dT%02d:%02d:%02d',
+		t.year, t.mon, t.mday, t.hour, t.min, t.sec) : null;
+}
+
+function band_of(iface) {
+	iface = iface || '?';
+	if (match(iface, /^phy0/)) return '2.4G';
+	if (match(iface, /^phy1/)) return '5G';
+	return iface;
+}
+
+function num(v) {
+	return (type(v) == 'int' || type(v) == 'double') ? v : null;
+}
+
+function send(status, obj) {
+	printf('Status: %d\nContent-Type: application/json\nCache-Control: no-store\n\n%s\n',
+		status, sprintf('%J', obj));
+}
+
+if (uci_get('mesh_collector', 'enabled') != '1') {
+	send(503, { status: 'disabled', message: 'collector disabled on this node' });
+	exit(0);
+}
+
+const STALE = stale_after();
+const NOW = time();
+
+let snaps = {};
+let files = fs.lsdir(DATA_DIR) || [];
+
+for (let name in files) {
+	if (!match(name, /\.json$/) || substr(name, 0, 4) == '.tmp')
+		continue;
+
+	let d = null;
+	try { d = json(fs.readfile(DATA_DIR + '/' + name)); }
+	catch (e) { d = null; }
+
+	if (type(d) != 'object')
+		continue;
+
+	let st = fs.stat(DATA_DIR + '/' + name);
+	let ts = int(d._received_ts) || (st ? st.mtime : NOW);
+	let id = replace(name, /\.json$/, '');
+
+	snaps[id] = {
+		id: id,
+		data: d,
+		ts: ts,
+		age: (NOW > ts) ? (NOW - ts) : 0
+	};
+}
+
+let mac2node = {};
+
+for (let id, s in snaps) {
+	for (let mac in (s.data.local_macs || [])) {
+		if (!mac)
+			continue;
+		let key = lc('' + mac);
+		let prev = mac2node[key];
+		if (prev && prev != id)
+			warn(sprintf('mesh-collector: MAC %s moved %s -> %s\n', key, prev, id));
+		mac2node[key] = id;
+	}
+}
+
+let nodes = [];
+
+for (let id, s in snaps) {
+	let ifaces = [];
+	for (let p in (s.data.mesh_peers || [])) {
+		if (p.interface && index(ifaces, p.interface) < 0)
+			push(ifaces, p.interface);
+	}
+	sort(ifaces);
+
+	push(nodes, { data: {
+		id: id,
+		label: id,
+		ifaces: ifaces,
+		age: s.age,
+		stale: (s.age > STALE),
+		timestamp: s.data.timestamp,
+		received_at: iso(s.ts)
+	}});
+}
+
+let edges = [], unknown = {};
+
+for (let id, s in snaps) {
+	for (let p in (s.data.mesh_peers || [])) {
+		if (p.plink != 'ESTAB')
+			continue;
+
+		let pmac = lc('' + (p.peer_mac || p.mac || ''));
+		if (!length(pmac))
+			continue;
+
+		let target = mac2node[pmac];
+		if (!target) {
+			target = '?' + substr(pmac, -8);
+			unknown[target] = pmac;
+		}
+
+		let iface = p.interface || '?';
+
+		push(edges, { data: {
+			id: id + '-->' + target + ':' + iface,
+			source: id,
+			target: target,
+			interface: iface,
+			band: band_of(iface),
+			signal: num(p.signal),
+			throughput: num(p.throughput),
+			metric: num(p.metric),
+			age: s.age,
+			stale: (s.age > STALE)
+		}});
+	}
+}
+
+for (let id, mac in unknown) {
+	push(nodes, { data: {
+		id: id, label: id, mac: mac,
+		unknown: true, ifaces: [], age: 0, stale: false
+	}});
+}
+
+send(200, {
+	elements: { nodes: nodes, edges: edges },
+	stale_after: STALE,
+	generated_at: iso(NOW)
+});

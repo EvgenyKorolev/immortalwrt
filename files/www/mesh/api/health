@@ -1,0 +1,43 @@
+#!/usr/bin/ucode
+
+'use strict';
+
+const fs = require('fs');
+
+const DATA_DIR = getenv('MESH_DATA_DIR') || '/tmp/mesh-data';
+
+function uci_get(sec, opt) {
+	try {
+		let c = require('uci').cursor();
+		return c.get('belmax', sec, opt);
+	}
+	catch (e) { return null; }
+}
+
+let host = fs.readfile('/proc/sys/kernel/hostname');
+host = host ? rtrim(host) : null;
+
+let port = int(uci_get('mesh_collector', 'port'));
+if (port <= 0 || port > 65535)
+	port = 8080;
+
+let nodes = [], files = fs.lsdir(DATA_DIR) || [];
+
+for (let name in files) {
+	if (!match(name, /\.json$/) || substr(name, 0, 4) == '.tmp')
+		continue;
+	push(nodes, replace(name, /\.json$/, ''));
+}
+sort(nodes);
+
+printf('Status: 200\nContent-Type: application/json\nCache-Control: no-store\n\n%s\n',
+	sprintf('%J', {
+		status: 'running',
+		backend: 'ucode',
+		hostname: host,
+		enabled: (uci_get('mesh_collector', 'enabled') == '1'),
+		port: port,
+		nodes_count: length(nodes),
+		nodes: nodes,
+		data_dir: DATA_DIR
+	}));

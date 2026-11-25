@@ -1,0 +1,108 @@
+#!/usr/bin/ucode
+
+'use strict';
+
+const fs = require('fs');
+
+const DATA_DIR = getenv('MESH_DATA_DIR') || '/tmp/mesh-data';
+const MAX_BODY = 65536;
+const LEGACY_RE = /^(.+)_[0-9]{9,}\.json$/;
+
+function uci_get(sec, opt) {
+	try {
+		let c = require('uci').cursor();
+		return c.get('belmax', sec, opt);
+	}
+	catch (e) { return null; }
+}
+
+function send(status, obj) {
+	printf('Status: %d\nContent-Type: application/json\nCache-Control: no-store\n\n%s\n',
+		status, sprintf('%J', obj));
+}
+
+function safe_name(id) {
+	let s = '' + (id || 'unknown');
+	s = replace(s, /[^A-Za-z0-9_.-]/g, '_');
+	s = substr(s, 0, 64);
+	s = replace(s, /^[._-]+/, '');
+	s = replace(s, /[._-]+$/, '');
+	return length(s) ? s : 'unknown';
+}
+
+function prune() {
+	let files = fs.lsdir(DATA_DIR);
+	if (!files)
+		return;
+
+	let now = time();
+
+	for (let name in files) {
+		if (substr(name, 0, 4) == '.tmp') {
+			let st = fs.stat(DATA_DIR + '/' + name);
+			if (st && (now - st.mtime) > 300)
+				fs.unlink(DATA_DIR + '/' + name);
+			continue;
+		}
+
+		if (match(name, LEGACY_RE))
+			fs.unlink(DATA_DIR + '/' + name);
+	}
+}
+
+if (uci_get('mesh_collector', 'enabled') != '1') {
+	send(503, { status: 'disabled', message: 'collector disabled on this node' });
+	exit(0);
+}
+
+if ((getenv('REQUEST_METHOD') || '') != 'POST') {
+	send(405, { status: 'error', message: 'POST required' });
+	exit(0);
+}
+
+if (int(getenv('CONTENT_LENGTH') || 0) > MAX_BODY) {
+	send(413, { status: 'error', message: 'body too large' });
+	exit(0);
+}
+
+let raw = '';
+try { raw = fs.stdin.read('all'); }
+catch (e) { raw = fs.readfile('/dev/stdin'); }
+
+let payload = null;
+try { payload = json(raw); }
+catch (e) { payload = null; }
+
+if (type(payload) != 'object') {
+	send(400, { status: 'error', message: 'invalid JSON' });
+	exit(0);
+}
+
+let node = safe_name(payload.node_id);
+payload.node_id = node;
+payload._received_ts = time();
+
+if (!fs.stat(DATA_DIR))
+	fs.mkdir(DATA_DIR, 0755);
+
+let dst = DATA_DIR + '/' + node + '.json';
+let tmp = DATA_DIR + '/.tmp-' + node;
+
+if (!fs.writefile(tmp, sprintf('%J', payload))) {
+	send(500, { status: 'error', message: 'write failed' });
+	exit(0);
+}
+
+if (!fs.rename(tmp, dst)) {
+	fs.unlink(tmp);
+	send(500, { status: 'error', message: 'rename failed' });
+	exit(0);
+}
+
+prune();
+
+send(200, {
+	status: 'ok',
+	node_id: node,
+	peers: length(payload.mesh_peers || [])
+});

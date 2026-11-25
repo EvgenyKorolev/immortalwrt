@@ -6,6 +6,10 @@
                 "luci.belmax": [ ],
                 "file": [ "exec" ]
             },
+            "file": {
+                "/proc/sys/kernel/hostname": [ "read" ],
+                "/etc/init.d/mesh-collector status": [ "exec" ]
+            },
             "uci": [ "belmax" ]
         },
         "write": {

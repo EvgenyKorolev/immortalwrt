@@ -5,8 +5,27 @@
 'require ui';
 'require dom';
 'require fs';
+'require uci';
 
 return view.extend({
+	load: function() {
+		return uci.load('belmax').then(function() {
+			try {
+				if (!uci.get('belmax', 'mesh_collector')) {
+					uci.set('belmax', 'mesh_collector', 'mesh_collector');
+					uci.set('belmax', 'mesh_collector', 'enabled', '0');
+					uci.set('belmax', 'mesh_collector', 'port', '8080');
+					uci.set('belmax', 'mesh_collector', 'stale_after', '90');
+				}
+				if (!uci.get('belmax', 'mesh_monitor')) {
+					uci.set('belmax', 'mesh_monitor', 'mesh_monitor');
+					uci.set('belmax', 'mesh_monitor', 'enabled', '1');
+					uci.set('belmax', 'mesh_monitor', 'interval', '30');
+				}
+			} catch (e) {}
+		}).catch(function() { return null; });
+	},
+
 	render: function() {
 		var m = new form.Map('belmax', _('Simple device setup'));
 
@@ -18,19 +37,14 @@ return view.extend({
 		opthname.placeholder = 'BelMax';
 		opthname.load = function(section_id) {
 			return fs.trimmed('/proc/sys/kernel/hostname')
-			         .then(L.bind(function(hostname) {
-				this.placeholder = hostname;
-				return form.Value.prototype.load.apply(this, [section_id]);
-			}, this));
+				.then(L.bind(function(hostname) {
+					this.placeholder = hostname;
+					return form.Value.prototype.load.apply(this, [section_id]);
+				}, this))
+				.catch(L.bind(function() {
+					return form.Value.prototype.load.apply(this, [section_id]);
+				}, this));
 		};
-
-		// var optapssid = sectcom.option(form.Value, 'ap_ssid', _('AP SSID'));
-		// optapssid.datatype = 'maxlength(32)';
-		// optapssid.placeholder = 'BelMax';
-		//
-		// var optapkey = sectcom.option(form.Value, 'ap_key', _('AP passwd'));
-		// optapkey.datatype = 'wpakey';
-		// optapkey.password = true;
 
 		var sectmesh = m.section(form.TypedSection, 'mesh', _('Mesh params'));
 		sectmesh.anonymous = true;
@@ -70,7 +84,7 @@ return view.extend({
 		};
 
 		var sectmon = m.section(form.TypedSection, 'mesh_monitor', _('Mesh Monitor Agent'));
-		sectmon.anonymous = false;
+		sectmon.anonymous = true;
 		sectmon.addremove = false;
 
 		var optenabled = sectmon.option(form.Flag, 'enabled', _('Enable Agent'), _('Автоматически запускать агент мониторинга'));
@@ -87,14 +101,45 @@ return view.extend({
 		optinterval.placeholder = '30';
 		optinterval.rmempty = false;
 
+		var sectcol = m.section(form.TypedSection, 'mesh_collector', _('Mesh Collector'),
+			_('Сервер визуализации топологии. Включайте только на ОДНОМ устройстве сети.'));
+		sectcol.anonymous = true;
+		sectcol.addremove = false;
+
+		var optcolen = sectcol.option(form.Flag, 'enabled', _('Enable Collector'), _('Запускать коллектор на этом устройстве'));
+		optcolen.rmempty = false;
+		optcolen.default = '0';
+
+		var optcolport = sectcol.option(form.Value, 'port', _('Listen port'), _('TCP-порт веб-интерфейса и API. Применяется после перезагрузки устройства'));
+		optcolport.datatype = 'port';
+		optcolport.placeholder = '8080';
+		optcolport.rmempty = false;
+
+		var optcolstale = sectcol.option(form.Value, 'stale_after', _('Stale after (sec)'), _('Через сколько секунд без данных считать ноду неактивной'));
+		optcolstale.datatype = 'and(uinteger, min(10), max(3600))';
+		optcolstale.placeholder = '90';
+		optcolstale.rmempty = false;
+
+		var optcolstate = sectcol.option(form.DummyValue, '_state', _('Service state'));
+		optcolstate.load = function() {
+			return fs.exec('/etc/init.d/mesh-collector', [ 'status' ])
+				.then(function(res) {
+					return ((res.stdout || '') + (res.stderr || '')).trim() || 'unknown';
+				})
+				.catch(function() { return 'unknown'; });
+		};
+
+		var optcolurl = sectcol.option(form.DummyValue, '_webui', _('Web UI'));
+		optcolurl.rawhtml = true;
+		optcolurl.depends('enabled', '1');
+		optcolurl.cfgvalue = function(section_id) {
+			var port = this.map.data.get('belmax', section_id, 'port') || '8080';
+			var url = 'http://' + window.location.hostname + ':' + port + '/';
+			return '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>';
+		};
+
 		m.applyOnSave = true;
 
 		return m.render();
-	},
-
-	handleSaveApply: function(ev, map) {
-		return this.handleSave(ev, map).then(function() {
-			return fs.exec('/etc/init.d/mesh-monitor', ['restart']).catch(function(){});
-		});
 	}
 });

@@ -1,24 +1,46 @@
 #!/bin/sh /etc/rc.common
-# init-mesh-agent
+# Агент мониторинга меш-топологии
 
-START=99
+START=95
 STOP=10
-
 USE_PROCD=1
 
+AGENT=/usr/libexec/mesh-agent.sh
+
 start_service() {
-    INTERVAL=$(uci get belmax.mesh_monitor.interval 2>/dev/null)
-    INTERVAL=${INTERVAL:-30}
-    
+    local enabled interval
+
+    enabled=$(uci -q get belmax.mesh_monitor.enabled)
+    if [ "$enabled" != "1" ]; then
+        logger -t mesh-monitor "disabled, skip"
+        return 0
+    fi
+
+    interval=$(uci -q get belmax.mesh_monitor.interval)
+    interval=${interval:-30}
+    [ "$interval" -ge 5 ] 2>/dev/null || interval=5
+    [ "$interval" -le 3600 ] 2>/dev/null || interval=3600
+
+    if [ ! -x "$AGENT" ]; then
+        logger -t mesh-monitor "$AGENT not found or not executable"
+        return 1
+    fi
+
     procd_open_instance
-    procd_set_param command /usr/libexec/mesh-agent.sh
-    procd_set_param respawn ${INTERVAL} ${INTERVAL} 0
-    procd_set_param stdout 1
+    procd_set_param command /bin/sh -c \
+        'while :; do /usr/libexec/mesh-agent.sh >/dev/null 2>&1; sleep "$MESH_INTERVAL"; done'
+    procd_set_param env MESH_INTERVAL="$interval"
+    procd_set_param respawn 3600 5 0
     procd_set_param stderr 1
     procd_close_instance
+
+    logger -t mesh-monitor "started, interval ${interval}s"
 }
 
 reload_service() {
-    stop
     start
+}
+
+service_triggers() {
+    procd_add_reload_trigger "belmax"
 }
