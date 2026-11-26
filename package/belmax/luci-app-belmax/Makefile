@@ -5,7 +5,7 @@ LUCI_DEPENDS:=+luci-base
 LUCI_PKGARCH:=all
 
 PKG_VERSION:=0.1
-# PKG_RELEASE:=1
+PKG_RELEASE:=2
 PKG_MAINTAINER:=vint
 
 define Package/luci-app-belmax/postinst

@@ -9,21 +9,21 @@
 
 return view.extend({
 	load: function() {
-		return uci.load('belmax').then(function() {
-			try {
-				if (!uci.get('belmax', 'mesh_collector')) {
-					uci.set('belmax', 'mesh_collector', 'mesh_collector');
-					uci.set('belmax', 'mesh_collector', 'enabled', '0');
-					uci.set('belmax', 'mesh_collector', 'port', '8080');
-					uci.set('belmax', 'mesh_collector', 'stale_after', '90');
-				}
-				if (!uci.get('belmax', 'mesh_monitor')) {
-					uci.set('belmax', 'mesh_monitor', 'mesh_monitor');
-					uci.set('belmax', 'mesh_monitor', 'enabled', '1');
-					uci.set('belmax', 'mesh_monitor', 'interval', '30');
-				}
-			} catch (e) {}
-		}).catch(function() { return null; });
+    	return uci.load('belmax').then(function() {
+        	if (uci.sections('belmax', 'mesh_collector').length === 0) {
+            	uci.add('belmax', 'mesh_collector', 'mesh_collector');
+            	uci.set('belmax', 'mesh_collector', 'enabled', '0');
+            	uci.set('belmax', 'mesh_collector', 'port', '8080');
+            	uci.set('belmax', 'mesh_collector', 'stale_after', '90');
+        	}
+        	if (uci.sections('belmax', 'mesh_monitor').length === 0) {
+            	uci.add('belmax', 'mesh_monitor', 'mesh_monitor');
+            	uci.set('belmax', 'mesh_monitor', 'enabled', '1');
+            	uci.set('belmax', 'mesh_monitor', 'interval', '30');
+            	uci.set('belmax', 'mesh_monitor', 'collector_url',
+                    'http://192.168.1.3:8080/api/mesh-data');
+        	}
+    	});
 	},
 
 	render: function() {
@@ -93,7 +93,7 @@ return view.extend({
 
 		var opturl = sectmon.option(form.Value, 'collector_url', _('Collector URL'), _('Полный URL коллектора (включая http://)'));
 		opturl.datatype = 'string';
-		opturl.placeholder = 'http://192.168.1.181:8080/api/mesh-data';
+		opturl.placeholder = 'http://192.168.1.3:8080/api/mesh-data';
 		opturl.rmempty = false;
 
 		var optinterval = sectmon.option(form.Value, 'interval', _('Interval (sec)'), _('Интервал отправки данных в секундах'));

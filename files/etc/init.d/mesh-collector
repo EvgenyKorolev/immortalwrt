@@ -4,49 +4,96 @@
 START=45          # раньше чем uhttpd (START=50)
 EXTRA_COMMANDS="status apply"
 
-_sync() {
-	local port
-	port=$(uci -q get belmax.mesh_collector.port); port=${port:-8080}
+# ---- вспомогательные -------------------------------------------------------
 
-	uci -q set uhttpd.mesh=uhttpd
-	uci -q delete uhttpd.mesh.listen_http
-	uci add_list uhttpd.mesh.listen_http="0.0.0.0:$port"
-	uci set uhttpd.mesh.home='/www/mesh'
-	uci set uhttpd.mesh.cgi_prefix='/api'
-	uci -q delete uhttpd.mesh.index_page
-	uci add_list uhttpd.mesh.index_page='mesh-viewer.html'
-	uci set uhttpd.mesh.no_dirlists='1'
-	uci set uhttpd.mesh.max_requests='10'
-	uci set uhttpd.mesh.max_connections='32'
-	uci set uhttpd.mesh.script_timeout='30'
-	uci commit uhttpd
+_enabled() {
+    [ "$(uci -q get belmax.mesh_collector.enabled)" = "1" ]
 }
+
+_port() {
+    local p
+    p=$(uci -q get belmax.mesh_collector.port)
+    printf '%s' "${p:-8080}"
+}
+
+# Создать/пересоздать инстанс uhttpd.mesh под коллектор
+_sync() {
+    local port
+    port=$(_port)
+
+    uci -q delete uhttpd.mesh
+    uci set    uhttpd.mesh=uhttpd
+    uci add_list uhttpd.mesh.listen_http="0.0.0.0:$port"
+    uci set    uhttpd.mesh.home='/www/mesh'
+    uci set    uhttpd.mesh.cgi_prefix='/api'
+    uci -q delete uhttpd.mesh.index_page
+    uci add_list uhttpd.mesh.index_page='mesh-viewer.html'
+    uci set    uhttpd.mesh.no_dirlists='1'
+    uci set    uhttpd.mesh.max_requests='10'
+    uci set    uhttpd.mesh.max_connections='32'
+    uci set    uhttpd.mesh.script_timeout='30'
+    uci commit uhttpd
+}
+
+# Удалить инстанс uhttpd.mesh (закрыть порт)
+_remove() {
+    # если инстанса и так нет — тихо выходим
+    uci -q get uhttpd.mesh >/dev/null 2>&1 || return 0
+    uci delete uhttpd.mesh
+    uci commit uhttpd
+}
+
+# Применить изменения: пересинхронизировать uhttpd.mesh с настройками
+# и перезапустить uhttpd, чтобы изменения подхватились
+_restart_uhttpd() {
+    /etc/init.d/uhttpd restart >/dev/null 2>&1
+}
+
+# ---- команды init ----------------------------------------------------------
 
 start() {
-	local port cur
-	port=$(uci -q get belmax.mesh_collector.port); port=${port:-8080}
-	cur=$(uci -q get uhttpd.mesh.listen_http)
-	# только правим конфиг; uhttpd ещё не запущен и подхватит его сам
-	[ "$cur" = "0.0.0.0:$port" ] || _sync
+    if _enabled; then
+        _sync
+        # uhttpd ещё не запущен (START=45 < START=50), он подхватит
+        # конфиг сам. На живом устройстве (sysupgrade/reload) —
+        # рестартуем явно, чтобы порт открылся/закрылся сразу.
+        if pidof uhttpd >/dev/null 2>&1; then
+            _restart_uhttpd
+        fi
+        logger -t mesh-collector "enabled on port $(_port)"
+    else
+        _remove
+        if pidof uhttpd >/dev/null 2>&1; then
+            _restart_uhttpd
+        fi
+        logger -t mesh-collector "disabled, instance removed"
+    fi
 }
 
-stop() { :; }
+stop() {
+    # ничего не делаем: uhttpd — общий сервис, трогать его при
+    # выключении коллектора нельзя. Инстанс уже удалён/не создавался
+    # на момент Save & Apply.
+    :;
+}
 
-apply() {          # только вручную из SSH
-	_sync
-	/etc/init.d/uhttpd restart
+apply() {
+    # ручной вызов из SSH после правки uci: пересчитать конфиг и
+    # рестартнуть uhttpd.
+    if _enabled; then _sync; else _remove; fi
+    _restart_uhttpd
 }
 
 status() {
-	local en port
-	en=$(uci -q get belmax.mesh_collector.enabled)
-	port=$(uci -q get belmax.mesh_collector.port); port=${port:-8080}
+    local en port
+    en=$(_enabled && echo 1 || echo 0)
+    port=$(_port)
 
-	if [ "$en" != "1" ]; then
-		echo "disabled"
-	elif netstat -ltn 2>/dev/null | grep -q ":$port "; then
-		echo "running (port $port)"
-	else
-		echo "enabled, not listening"
-	fi
+    if [ "$en" != "1" ]; then
+        echo "disabled"
+    elif netstat -ltn 2>/dev/null | grep -q ":$port "; then
+        echo "running (port $port)"
+    else
+        echo "enabled, not listening"
+    fi
 }

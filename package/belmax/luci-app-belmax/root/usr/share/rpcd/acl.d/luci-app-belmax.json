@@ -8,7 +8,8 @@
             },
             "file": {
                 "/proc/sys/kernel/hostname": [ "read" ],
-                "/etc/init.d/mesh-collector status": [ "exec" ]
+                "/etc/init.d/mesh-collector": [ "exec" ],
+                "/etc/init.d/mesh-collector *": [ "exec" ]
             },
             "uci": [ "belmax" ]
         },

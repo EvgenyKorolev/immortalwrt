@@ -20,7 +20,7 @@ fi
 # --- секция агента ---
 if ! uci -q get belmax.mesh_monitor >/dev/null; then
     uci set belmax.mesh_monitor=mesh_monitor
-    uci set belmax.mesh_monitor.collector_url='http://192.168.1.181:8080/api/mesh-data'
+    uci set belmax.mesh_monitor.collector_url='http://192.168.1.3:8080/api/mesh-data'
     uci set belmax.mesh_monitor.enabled='1'
     uci set belmax.mesh_monitor.interval='30'
 fi
@@ -34,20 +34,24 @@ if ! uci -q get belmax.mesh_collector >/dev/null; then
 fi
 uci commit belmax
 
-# --- инстанс uhttpd для коллектора ---
+# --- инстанс uhttpd для коллектора: только если коллектор включён ---
 PORT=$(uci -q get belmax.mesh_collector.port); PORT=${PORT:-8080}
-
-uci -q delete uhttpd.mesh
-uci set uhttpd.mesh=uhttpd
-uci add_list uhttpd.mesh.listen_http="0.0.0.0:$PORT"
-uci set uhttpd.mesh.home='/www/mesh'
-uci set uhttpd.mesh.cgi_prefix='/api'
-uci add_list uhttpd.mesh.index_page='mesh-viewer.html'
-uci set uhttpd.mesh.no_dirlists='1'
-uci set uhttpd.mesh.max_requests='10'
-uci set uhttpd.mesh.max_connections='32'
-uci set uhttpd.mesh.script_timeout='30'
-uci commit uhttpd
+if [ "$(uci -q get belmax.mesh_collector.enabled)" = "1" ]; then
+    uci -q delete uhttpd.mesh
+    uci set uhttpd.mesh=uhttpd
+    uci add_list uhttpd.mesh.listen_http="0.0.0.0:$PORT"
+    uci set uhttpd.mesh.home='/www/mesh'
+    uci set uhttpd.mesh.cgi_prefix='/api'
+    uci add_list uhttpd.mesh.index_page='mesh-viewer.html'
+    uci set uhttpd.mesh.no_dirlists='1'
+    uci set uhttpd.mesh.max_requests='10'
+    uci set uhttpd.mesh.max_connections='32'
+    uci set uhttpd.mesh.script_timeout='30'
+    uci commit uhttpd
+else
+    uci -q delete uhttpd.mesh
+    uci commit uhttpd
+fi
 
 # --- закрыть порт со стороны WAN ---
 uci -q set firewall.mesh_collector_wan_deny=rule
@@ -60,7 +64,7 @@ uci set firewall.mesh_collector_wan_deny.enabled='1'
 uci commit firewall
 
 # --- автозапуск ---
-[ -x /etc/init.d/mesh-monitor ]   && /etc/init.d/mesh-monitor enable
+[ -x /etc/init.d/mesh-agent ]     && /etc/init.d/mesh-agent enable
 [ -x /etc/init.d/mesh-collector ] && /etc/init.d/mesh-collector enable
 
 mkdir -p /tmp/mesh-data
